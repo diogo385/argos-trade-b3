@@ -1,6 +1,6 @@
 # Argos Trade B3 · Plano
 
-Versão 0.2 · 25/11/2026 · fase de simulação (robô simulado diário ativo)
+Versão 0.3 · 25/11/2026 · fase de simulação (robô simulado diário ativo, com porteiro de risco)
 
 ---
 
@@ -114,3 +114,53 @@ Esta seção substitui as carteiras de ETFs e de ações da seção 3, que ficar
 | Rebalanceamento | Primeiro pregão de cada trimestre; FIIs só recebem compras (venda de FII paga 20%) |
 | Queda forte | Ação de valorização 35% abaixo do topo: **só alerta**, não vende (o stop automático piorou o backtest) |
 | Revisão trimestral | Depois de cada temporada de resultados, revisão da tese de cada ativo com o Claude (lucro, dívida, vacância, P/VP) |
+
+---
+
+## 10. Porteiro de risco (em vigor)
+
+Toda ordem proposta pela estratégia passa pelo porteiro antes de ser executada. Os vetos ficam em `simulado/vetos.csv` e aparecem no Telegram e no monitor. Esta tabela substitui a da seção 6.
+
+| Trava | Limite | Ação |
+|---|---|---|
+| Valor por ordem | 15% do patrimônio | Veta |
+| Operações por dia | 8, fora da montagem e do rebalanceamento trimestral | Veta até o dia seguinte |
+| Cotação que não é do dia | Ativo sem negócio no pregão | Não opera no ativo |
+| Dado suspeito | Salto acima de 25% sem desdobramento | Mantém o último preço confiável e não opera; aceita o novo patamar depois de 3 pregões |
+| Volatilidade extrema | Movimento acima de 10% no dia | Não opera no ativo naquele dia |
+| Day trade | Compra e venda do mesmo ativo no dia | Veta |
+| Vendas de ações no mês | R$ 19 mil (margem para a isenção de R$ 20 mil) | Veta vendas que não sejam saída por tese |
+| Saldo impossível | Caixa ou quantidade negativa | Para tudo, não grava nada e avisa |
+
+## 11. Avisos no Telegram
+
+| Nível | Quando | O robô faz |
+|---|---|---|
+| 📊 Fechamento | Todo dia útil, ~18h30 | Operações com motivo, vetos, proventos e patrimônio contra as referências |
+| 🗓️ Relatório semanal | Fechamento de sexta | Semana contra parada, CDI, Ibovespa e IFIX; operações, vetos e proventos |
+| ℹ️ Informativo | Ação 35% abaixo do topo; patrimônio 15% abaixo do pico | Continua operando |
+| ⏸️ Pausa no ativo | Cotação velha, dado suspeito, volatilidade extrema, veto do porteiro | Pula o ativo e retoma sozinho |
+| 🛑 Parada técnica | O robô não conseguiu rodar (erro de dados ou de código) | Não altera a carteira; tenta no próximo dia útil |
+| 🚨 Urgente | Caixa ou quantidade negativa | Para tudo e não grava |
+| 📵 Sinal de vida | 20h30: o robô não rodou ou terminou com erro | Dispara o robô se ele não tinha rodado |
+
+Comandos pelo Telegram (`/status`, `/pausar`) ficam para a fase real: exigem um servidor ligado o tempo todo.
+
+## 12. Critérios para avançar e para desistir
+
+**Simulado → real pequeno, só se tudo abaixo valer:**
+- pelo menos **90 dias** de simulado (a partir de 25/11/2026) e **uma revisão trimestral** feita;
+- nenhuma parada 🛑 ou 🚨 sem causa entendida e corrigida;
+- o robô não está mais de **5 pontos** atrás da carteira parada;
+- o resultado é coerente com o backtest (reforços e saídas acontecendo como previsto);
+- existe um caminho de execução real definido (corretora e forma de enviar ordens).
+
+**Quando desistir ou voltar para a prancheta:**
+- depois de 6 meses, o robô perde para a carteira parada **e** para o CDI;
+- alguma trava falha na prática;
+- o projeto deixa de ser útil ou interessante para você.
+
+## 13. Imposto e registro
+
+- `simulado/ir_mensal.csv`: apuração de cada mês (vendas de ações, lucro, isenção, lucro em FIIs e IR devido).
+- `simulado/operacoes.csv` e `simulado/proventos.csv`: base para a declaração anual, se um dia virar real.

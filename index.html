@@ -128,13 +128,30 @@ td.motivo { white-space: normal; min-width: 240px; color: var(--ink-2); }
 .rule b { display: block; margin-bottom: 2px; }
 .rule p { margin: 0; color: var(--muted); font-size: 12.5px; }
 
+/* último fechamento: passo a passo */
+.flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.step { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; background: var(--surface-2); position: relative; }
+.step .nm { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; gap: 6px; }
+.step .v { font-weight: 800; font-size: 18px; margin-top: 2px; }
+.step .s { font-size: 12px; color: var(--muted); }
+.step:not(:last-child)::after { content: "→"; position: absolute; right: -11px; top: 50%; transform: translateY(-50%); color: var(--dim); font-weight: 700; z-index: 1; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.log { margin: 8px 0 0; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px;
+  font: 12px/1.6 ui-monospace, Menlo, Consolas, monospace; color: var(--ink-2); list-style: none; max-height: 220px; overflow: auto; }
+.log li { white-space: pre-wrap; word-break: break-word; }
+.alertas { margin: 0 0 10px; padding: 0; list-style: none; }
+.alertas li { background: var(--warn-soft); border: 1px solid #f3d6a8; color: var(--ink-2); border-radius: 9px; padding: 7px 10px; margin-bottom: 6px; font-size: 12.5px; }
+details summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--brand); }
+select.pick { font: inherit; font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 9px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); }
+
 .empty { padding: 26px; text-align: center; color: var(--muted); border: 1px dashed var(--line-2); border-radius: 12px; background: var(--surface-2); }
 .banner { background: var(--brand-soft); border: 1px solid #c9dcfa; color: var(--ink-2); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 13px; }
 .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
 footer { color: var(--muted); font-size: 12px; margin-top: 24px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 
 @media (max-width: 1080px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr); } .rules { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 860px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .step::after { display: none; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .two { grid-template-columns: minmax(0, 1fr); } .rules { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 560px) {
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kpi .v { font-size: 19px; }
   .blocks { grid-template-columns: minmax(0, 1fr); } .brand img { height: 52px; } .brand .t1 { font-size: 18px; }
@@ -179,6 +196,7 @@ const SERIES = [
 ];
 const NOMES = { valorizacao: "Valorização", dividendos: "Dividendos", fiis: "FIIs" };
 const REFORCO_1 = 0.85, REFORCO_2 = 0.75, TETO = 2, CORTE = { dividendos: 0.30, fiis: 0.25 };
+let ativoSel = null;
 let D = null, vis = Object.fromEntries(SERIES.map(s => [s.k, true])), faixa = "tudo", tabela = false, filtroOp = "todas";
 
 // ---------- utilidades
@@ -223,11 +241,12 @@ async function arquivo(nome, json) {
 // ---------- carga
 async function carregar() {
   try {
-    const [est, hist, ops, prov] = await Promise.all([
-      arquivo("estado.json", true), arquivo("historico.csv"), arquivo("operacoes.csv"), arquivo("proventos.csv")]);
+    const [est, hist, ops, prov, precos, vetos, ir] = await Promise.all([
+      arquivo("estado.json", true), arquivo("historico.csv"), arquivo("operacoes.csv"), arquivo("proventos.csv"),
+      arquivo("precos.json", true).catch(() => null), arquivo("vetos.csv"), arquivo("ir_mensal.csv")]);
     if (!est) { vazio(); return; }
     D = { est, hist: (hist || []).map(h => ({ ...h, ...Object.fromEntries(SERIES.map(s => [s.k, +h[s.k]])), caixa: +h.caixa })),
-          ops: ops || [], prov: prov || [] };
+          ops: ops || [], prov: prov || [], precos, vetos: vetos || [], ir: ir || [] };
     desenhar();
   } catch (e) {
     el("app").innerHTML = `<div class="empty">Não consegui ler os dados do robô agora (${esc(e.message)}). Tento de novo em 5 minutos.</div>`;
@@ -294,6 +313,7 @@ function desenhar() {
   const reservaAlvo = total * e.reserva / e.capital;
   const nOps = D.ops.filter(o => o.motivo !== "montagem inicial").length;
 
+  if (!ativoSel) ativoSel = (lin.filter(x => x.q && x.pm).sort((a, b) => a.p / a.pm - b.p / b.pm)[0] || lin[0]).a;
   const blocos = Object.keys(e.grupos).map(g => {
     const ls = lin.filter(x => x.g === g), v = ls.reduce((s, x) => s + x.v, 0);
     const custo = ls.reduce((s, x) => s + (x.pm ? x.q * x.pm : 0), 0);
@@ -310,6 +330,8 @@ function desenhar() {
     ${kpi("Proventos recebidos", brl(provTotal), `${D.prov.length} pagamentos · IR pago ${brl(c.ir_pago)}`)}
     ${kpi("Reserva em caixa", brl(c.caixa), `alvo de ${brl(reservaAlvo, 0)} · rende CDI`)}
   </section>
+
+  ${fechamento(lin)}
 
   <section class="card full">
     <div class="chart-head">
@@ -346,6 +368,16 @@ function desenhar() {
     </div>
   </section>
 
+  <section class="card full">
+    <div class="chart-head">
+      <div><h2>Preço e gatilhos por ativo</h2><p class="sub">Fechamento diário dos últimos 6 meses, com as linhas que fazem o robô agir.</p></div>
+      <select class="pick" id="pick" aria-label="Escolher ativo">${Object.entries(e.grupos).map(([g, l]) =>
+        `<optgroup label="${NOMES[g]}">${l.map(a => `<option value="${a}" ${a === ativoSel ? "selected" : ""}>${a}</option>`).join("")}</optgroup>`).join("")}</select>
+    </div>
+    <div class="legend" id="legAtivo"></div>
+    <div class="chart" id="chartAtivo"></div>
+  </section>
+
   <section class="grid two">
     <div class="card">
       <h2>Diário de operações</h2><p class="sub">Cada decisão do robô com o motivo. Montagem inicial incluída.</p>
@@ -361,6 +393,28 @@ function desenhar() {
     </div>
   </section>
 
+  <section class="grid two">
+    <div class="card">
+      <h2>Porteiro de risco</h2><p class="sub">Toda ordem passa por estas travas antes de ser executada. Vetos ficam registrados.</p>
+      <div class="tbl-wrap"><table><tbody>
+        <tr><td>Valor por ordem</td><td class="r num">até ${((e.travas?.ordem_max ?? .15) * 100).toFixed(0)}% do patrimônio</td></tr>
+        <tr><td>Operações por dia</td><td class="r num">até ${e.travas?.max_ops_dia ?? 8} (fora do rebalanceamento)</td></tr>
+        <tr><td>Cotação que não é do dia</td><td class="r">não opera no ativo</td></tr>
+        <tr><td>Salto acima de ${((e.travas?.salto_suspeito ?? .25) * 100).toFixed(0)}% sem desdobramento</td><td class="r">dado suspeito: não opera</td></tr>
+        <tr><td>Movimento acima de ${((e.travas?.vol_max_dia ?? .10) * 100).toFixed(0)}% no dia</td><td class="r">não opera no ativo</td></tr>
+        <tr><td>Compra e venda do mesmo ativo no dia</td><td class="r">proibido (sem day trade)</td></tr>
+        <tr><td>Vendas de ações no mês</td><td class="r num">trava em ${brl(e.travas?.vendas_mes_limite ?? 19000, 0)} (isenção de IR)</td></tr>
+        <tr><td>Caixa ou quantidade negativa</td><td class="r">para tudo e avisa</td></tr>
+      </tbody></table></div>
+      <h2 style="margin-top:14px">Vetos registrados <span class="sub">· ${D.vetos.length}</span></h2>
+      <div class="tbl-wrap" style="max-height:220px;overflow:auto">${vetosLista()}</div>
+    </div>
+    <div class="card">
+      <h2>Imposto de renda (simulado)</h2><p class="sub">Apuração mensal das vendas de ações e FIIs. Ações ficam isentas com vendas até R$ 20 mil no mês; FIIs pagam 20% sobre o lucro.</p>
+      <div class="tbl-wrap" style="max-height:330px;overflow:auto">${irLista()}</div>
+    </div>
+  </section>
+
   <section class="card full">
     <h2>Regras em vigor</h2><p class="sub">Versão V3 do backtest. O robô decide sozinho; nenhuma regra é afrouxada por ele.</p>
     <div class="rules">
@@ -370,7 +424,8 @@ function desenhar() {
     </div>
   </section>`;
 
-  grafico(); barras();
+  grafico(); barras(); graficoAtivo(lin);
+  el("pick").onchange = ev => { ativoSel = ev.target.value; graficoAtivo(lin); };
   document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { faixa = b.dataset.f; desenhar(); });
   document.querySelectorAll("[data-k]").forEach(b => b.onclick = () => { vis[b.dataset.k] = !vis[b.dataset.k]; desenhar(); });
   document.querySelectorAll("[data-op]").forEach(b => b.onclick = () => { filtroOp = b.dataset.op; desenhar(); });
@@ -399,6 +454,105 @@ function gatilhos(lin) {
     <div class="trig-h">Saúde dos proventos (12 meses vs anteriores)</div>
     <ul class="trig">${saude.length ? saude.map(x => item(x.a, Math.max(0, Math.min(1, (x.saude + CORTE[x.g]) / (CORTE[x.g] * 2))),
       `sai se cair mais de ${CORTE[x.g] * 100}%`, `<span class="${sinal(x.saude)}">${pct(x.saude, 0)}</span>`)).join("") : `<li><span></span><span class="txt">Sem histórico suficiente ainda.</span><span></span></li>`}</ul>`;
+}
+
+function fechamento(lin) {
+  const e = D.est, f = e.fechamento, c = e.carteira;
+  if (!f) return "";
+  const col = f.coletor || {}, prob = [...(col.velhos || []), ...(col.suspeitos || [])];
+  const ult = D.ops[D.ops.length - 1];
+  const perto = lin.filter(x => x.q && x.pm && !x.fora).map(x => ({ a: x.a, d: x.p / (x.pm * REFORCO_1) - 1 })).sort((a, b) => a.d - b.d)[0];
+  const horas = e.ultima_execucao ? (Date.now() - new Date(e.ultima_execucao)) / 36e5 : null;
+  const tel = f.telegram === "enviado";
+  const passo = (ic, nm, v, s, cls = "") => `<div class="step"><div class="nm">${ic} ${nm}</div><div class="v num ${cls}">${v}</div><div class="s">${s}</div></div>`;
+  const tile = (lab, v, s) => `<div class="blk"><div class="lab">${lab}</div><div class="v num">${v}</div><div class="s num">${s}</div></div>`;
+  return `<section class="card full">
+    <h2>Último fechamento · ${dataBR(f.data)}</h2><p class="sub">O caminho de cada decisão: coletor → estratégia → porteiro de risco → executor → avisos.</p>
+    <div class="flow">
+      ${passo("◉", "Coletor", `${col.ok ?? "--"}/${col.total ?? 20}`, prob.length ? `sem dado confiável: ${prob.join(", ")}` : "cotações do dia conferidas" + (f.cdi_ok === false ? " · CDI estimado" : ""), prob.length ? "neg" : "")}
+      ${passo("≈", "Estratégia", f.propostas, f.propostas === 1 ? "ordem proposta" : "ordens propostas")}
+      ${passo("⛨", "Porteiro", `${f.aprovadas} <span style="font-weight:500;color:var(--muted)">/</span> ${f.vetos.length}`, "aprovadas / vetadas", f.vetos.length ? "neg" : "")}
+      ${passo("⇄", "Executor", f.operacoes, f.operacoes === 1 ? "operação executada" : "operações executadas")}
+      ${passo("✈", "Telegram", tel ? "Enviado" : "Falhou", tel ? "resumo do dia entregue" : "mensagem não entregue", tel ? "pos" : "neg")}
+    </div>
+    <div class="tiles">
+      ${tile("Sinal de vida", horas == null ? "--" : horas < 1 ? "agora há pouco" : horas < 48 ? `há ${Math.round(horas)} h` : `há ${Math.round(horas / 24)} dias`, "conferido às 20h30 nos dias úteis")}
+      ${tile("Última operação", ult ? `${ult.tipo === "COMPRA" ? "Compra" : "Venda"} ${esc(ult.ativo)}` : "—", ult ? `${dataBR(ult.data)} · ${brl(+ult.valor)}` : "nenhuma ainda")}
+      ${tile("Mais perto de agir", perto ? perto.a : "—", perto ? (perto.d <= 0 ? "no gatilho de reforço" : `faltam ${pct(-perto.d).replace("−", "")} para o reforço`) : "")}
+      ${tile("Custos e IR pagos", brl(c.custos + c.ir_pago), `custos ${brl(c.custos)} · IR ${brl(c.ir_pago)}`)}
+    </div>
+    ${f.alertas?.length ? `<ul class="alertas">${f.alertas.map(a => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
+    ${f.vetos.length ? `<ul class="alertas">${f.vetos.map(v => `<li>⏸️ Porteiro vetou ${v.tipo.toLowerCase()} de <b>${esc(v.ativo)}</b> (${brl(v.valor)}): ${esc(v.trava)}</li>`).join("")}</ul>` : ""}
+    <details><summary>Ver o registro completo do fechamento</summary><ul class="log">${(f.registro || []).map(l => `<li>${esc(l)}</li>`).join("")}</ul></details>
+  </section>`;
+}
+
+function vetosLista() {
+  if (!D.vetos.length) return `<div class="empty">Nenhum veto até agora.</div>`;
+  return `<table><thead><tr><th>Data</th><th>Ordem</th><th class="r">Valor</th><th>Trava</th></tr></thead><tbody>
+    ${D.vetos.slice().reverse().map(v => `<tr><td class="num">${dataBR(v.data)}</td><td><span class="chip ${v.tipo === "COMPRA" ? "buy" : "sell"}">${v.tipo === "COMPRA" ? "Compra" : "Venda"}</span> <span class="tk">${esc(v.ativo)}</span></td>
+      <td class="r num">${brl(+v.valor)}</td><td class="motivo">${esc(v.trava)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+function irLista() {
+  if (!D.ir.length) return `<div class="empty">A primeira apuração aparece na virada do mês.</div>`;
+  const mes = m => `${m.slice(5)}/${m.slice(0, 4)}`;
+  return `<table><thead><tr><th>Mês</th><th class="r">Vendas</th><th class="r">Lucro ações</th><th>Isento</th><th class="r">Lucro FIIs</th><th class="r">IR</th></tr></thead><tbody>
+    ${D.ir.slice().reverse().map(x => `<tr><td class="num">${mes(x.mes)}</td><td class="r num">${brl(+x.vendas_acoes)}</td>
+      <td class="r num ${sinal(+x.ganho_acoes)}">${brl(+x.ganho_acoes)}</td><td>${esc(x.isento_acoes)}</td>
+      <td class="r num ${sinal(+x.ganho_fiis)}">${brl(+x.ganho_fiis)}</td><td class="r num">${brl(+x.ir_devido)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+// ---------- gráfico por ativo: preço, média de 200 dias, preço médio e gatilho de reforço
+function graficoAtivo(lin) {
+  const box = el("chartAtivo"), leg = el("legAtivo"), P = D.precos, a = ativoSel;
+  if (!P || !P.fech?.[a]) { leg.innerHTML = ""; box.innerHTML = `<div class="empty">O histórico de preços aparece depois do próximo fechamento.</div>`; return; }
+  const pts = P.datas.map((d, i) => ({ d, c: P.fech[a][i], m: P.mm200[a][i] })).filter(x => x.c != null);
+  if (pts.length < 2) { box.innerHTML = `<div class="empty">Sem histórico suficiente para ${a}.</div>`; return; }
+  const x = lin.find(l => l.a === a) || {}, pm = x.pm || null, k = x.ref || 0;
+  const gat = pm && k < 2 ? pm * (k === 0 ? REFORCO_1 : REFORCO_2 / REFORCO_1) : null;
+  const refs = [pm && { v: pm, n: "Preço médio", c: "var(--ink)" }, gat && { v: gat, n: `${k + 1}º reforço`, c: "var(--pos)" }].filter(Boolean);
+  leg.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)"><i style="background:var(--s1)"></i>Fechamento</span>
+    <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)"><i style="background:var(--s2)"></i>Média de 200 dias</span>
+    ${refs.map(r => `<span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)"><i style="background:${r.c};height:2px"></i>${r.n}: <b class="num">${brl(r.v)}</b></span>`).join("")}`;
+  const W = box.clientWidth || 800, H = window.innerWidth <= 560 ? 230 : 280, m = { l: 58, r: W < 560 ? 12 : 92, t: 10, b: 26 };
+  const vals = pts.flatMap(p => [p.c, p.m]).concat(refs.map(r => r.v)).filter(v => v != null);
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.08 || hi * 0.01; lo -= pad; hi += pad;
+  const X = i => m.l + i * (W - m.l - m.r) / (pts.length - 1), Y = v => m.t + (hi - v) * (H - m.t - m.b) / (hi - lo);
+  const ty = Array.from({ length: 5 }, (_, i) => lo + (hi - lo) * i / 4), nx = Math.min(6, pts.length);
+  const tx = Array.from({ length: nx }, (_, i) => Math.round(i * (pts.length - 1) / (nx - 1)));
+  const caminho = key => { let d = "", on = false; pts.forEach((p, i) => { if (p[key] == null) { on = false; return; } d += `${on ? "L" : "M"}${X(i).toFixed(1)},${Y(p[key]).toFixed(1)}`; on = true; }); return d; };
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="height:${H}px" role="img" aria-label="Preço de ${a} com média de 200 dias, preço médio e gatilho de reforço">`;
+  svg += ty.map(v => `<line class="grid-l" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="ax num" x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</text>`).join("");
+  svg += tx.map(i => `<text class="ax num" x="${X(i)}" y="${H - 6}" text-anchor="middle">${curta(pts[i].d)}</text>`).join("");
+  const rot = refs.map(r => ({ ...r, y: Y(r.v) })).sort((p, q) => p.y - q.y);
+  for (let i = 1; i < rot.length; i++) if (rot[i].y - rot[i - 1].y < 14) rot[i].y = rot[i - 1].y + 14;
+  svg += rot.map(r => `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(r.v)}" y2="${Y(r.v)}" stroke="${r.c}" stroke-width="1.5" stroke-dasharray="5 4"/>` +
+    (W >= 560 ? `<text x="${W - m.r + 8}" y="${r.y + 4}" font-size="11.5" fill="var(--ink-2)">${r.n}</text>` : "")).join("");
+  svg += `<path d="${caminho("m")}" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round"/>`;
+  svg += `<path d="${caminho("c")}" fill="none" stroke="var(--s1)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+  svg += `<circle cx="${X(pts.length - 1)}" cy="${Y(pts[pts.length - 1].c)}" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>`;
+  svg += `<line id="crossA" y1="${m.t}" y2="${H - m.b}" stroke="var(--dim)" visibility="hidden"/><circle id="dotA" r="4.5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`;
+  svg += `<rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent" id="hitA"/></svg><div class="tip" id="tipA"></div>`;
+  box.innerHTML = svg;
+  const hit = el("hitA"), tip = el("tipA"), cross = el("crossA"), dot = el("dotA");
+  const mover = ev => {
+    const r = box.querySelector("svg").getBoundingClientRect(), sx = W / r.width;
+    const px = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) * sx;
+    const i = Math.max(0, Math.min(pts.length - 1, Math.round((px - m.l) / ((W - m.l - m.r) / (pts.length - 1))))), p = pts[i];
+    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("visibility", "visible");
+    dot.setAttribute("cx", X(i)); dot.setAttribute("cy", Y(p.c)); dot.setAttribute("visibility", "visible");
+    tip.innerHTML = `<div class="d">${a} · ${dataBR(p.d)}</div>
+      <div class="r"><span><i style="background:var(--s1)"></i>Fechamento</span><b class="num">${brl(p.c)}</b></div>
+      ${p.m != null ? `<div class="r"><span><i style="background:var(--s2)"></i>Média 200 dias</span><b class="num">${brl(p.m)}</b></div>` : ""}
+      ${pm ? `<div class="r"><span>vs preço médio</span><b class="num">${pct(p.c / pm - 1)}</b></div>` : ""}`;
+    tip.style.display = "block";
+    const left = X(i) / sx, w = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(r.width - w, left + (left > r.width / 2 ? -w - 14 : 14))) + "px"; tip.style.top = "10px";
+  };
+  const sair = () => { tip.style.display = "none"; cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); };
+  hit.addEventListener("mousemove", mover); hit.addEventListener("touchmove", mover, { passive: true });
+  hit.addEventListener("mouseleave", sair); hit.addEventListener("touchend", sair);
 }
 
 function diario() {

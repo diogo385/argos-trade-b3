@@ -22,6 +22,6 @@ e salva o resultado em `backtest/RESULTADO.md`.
 ## Robô simulado
 Roda sozinho todo dia útil às 18h30 (Brasília) pelo GitHub Actions e aplica as regras da versão V3 de
 `backtest/ROBO_REGRAS.md`: reforço nas quedas com a reserva, realização de lucro, saída por corte de proventos e
-rebalanceamento trimestral. Registra tudo em `simulado/` (`historico.csv`, `operacoes.csv`, `proventos.csv`, `estado.json`).
+rebalanceamento trimestral. Toda ordem passa pelo porteiro de risco (`PLANO.md`, seção 10). Um sinal de vida confere às 20h30 se o robô rodou, e toda sexta sai um relatório semanal. Registra tudo em `simulado/` (`historico.csv`, `operacoes.csv`, `proventos.csv`, `estado.json`).
 
 Telegram: cadastre `TELEGRAM_TOKEN` e `TELEGRAM_CHAT_ID` em Settings → Secrets and variables → Actions.
