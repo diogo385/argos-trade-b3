@@ -47,7 +47,7 @@ As duas rodam lado a lado, com a mesma divisão de 70% em renda variável e 30% 
 
 ## 4. Estratégia
 
-- **Quando:** uma vez por dia útil, depois do fechamento do pregão (~18h30 de Brasília).
+- **Quando:** uma vez por dia útil, depois do fechamento do pregão (~19h15 de Brasília).
 - **Regra:** se um ativo se afastar do alvo mais que uma fração do próprio alvo (testando 20% e 35%), volta ao alvo. Ex.: alvo 10% com faixa de 20% → opera abaixo de 8% ou acima de 12%.
 - Ignora ajustes menores que R$ 50. Primeiro vende, depois compra.
 - **Calendário da B3:** não opera em fins de semana e feriados.
@@ -136,13 +136,13 @@ Toda ordem proposta pela estratégia passa pelo porteiro antes de ser executada.
 
 | Nível | Quando | O robô faz |
 |---|---|---|
-| 📊 Fechamento | Todo dia útil, ~18h30 | Operações com motivo, vetos, proventos e patrimônio contra as referências |
+| 📊 Fechamento | Todo dia útil, ~19h15 | Operações com motivo, vetos, proventos e patrimônio contra as referências |
 | 🗓️ Relatório semanal | Fechamento de sexta | Semana contra parada, CDI, Ibovespa e IFIX; operações, vetos e proventos |
 | ℹ️ Informativo | Ação 35% abaixo do topo; patrimônio 15% abaixo do pico | Continua operando |
 | ⏸️ Pausa no ativo | Cotação velha, dado suspeito, volatilidade extrema, veto do porteiro | Pula o ativo e retoma sozinho |
 | 🛑 Parada técnica | O robô não conseguiu rodar (erro de dados ou de código) | Não altera a carteira; tenta no próximo dia útil |
 | 🚨 Urgente | Caixa ou quantidade negativa | Para tudo e não grava |
-| 📵 Sinal de vida | 20h30: o robô não rodou ou terminou com erro | Dispara o robô se ele não tinha rodado |
+| 📵 Sinal de vida | 21h15: o robô não rodou ou terminou com erro | Dispara o robô se ele não tinha rodado |
 
 Comandos pelo Telegram (`/status`, `/pausar`) ficam para a fase real: exigem um servidor ligado o tempo todo.
 

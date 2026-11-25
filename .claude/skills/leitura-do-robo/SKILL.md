@@ -6,13 +6,13 @@ description: Lê os arquivos do robô simulado do Argos Trade B3 (pasta simulado
 # Leitura do robô · Argos Trade B3
 
 ## Fontes
-1. `git pull` no repositório `argos-trade-b3` (o robô faz commit todo dia útil depois das 18h30).
+1. `git pull` no repositório `argos-trade-b3` (o robô faz commit todo dia útil depois das 19h15).
 2. `simulado/historico.csv` — uma linha por pregão: `data;patrimonio;caixa;carteira_parada;cdi;ibovespa;ifix;operacoes`.
 3. `simulado/operacoes.csv` — `data;tipo;ativo;quantidade;preco;valor;custo;motivo` (a primeira leva é a "montagem inicial").
 4. `simulado/proventos.csv` — `data_com;ativo;quantidade;valor_por_cota;total`.
 5. `simulado/estado.json` — posições (`carteira.qtd`, `carteira.pm`), caixa, `precos` do último fechamento, `fora`, `reforcos`,
    `saude_proventos`, `alertado`, `ir_pago`, `ultimo_pregao`.
-6. Regras: `PLANO.md` seção 9 (V3). Se o histórico estiver vazio, diga que o robô ainda não rodou e quando roda (dia útil, 18h30).
+6. Regras: `PLANO.md` seção 9 (V3). Se o histórico estiver vazio, diga que o robô ainda não rodou e quando roda (dia útil, 19h15).
 
 ## Cálculos (faça com um script Python curto, não de cabeça)
 - Período pedido (padrão: últimos 7 dias corridos). Retorno do robô no período e desde o início; o mesmo para carteira parada, CDI, Ibovespa e IFIX.

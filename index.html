@@ -303,18 +303,18 @@ const agoraBR = () => new Date(new Date().toLocaleString("en-US", { timeZone: "A
 const isoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 function proximaExecucao() {
   const agora = agoraBR(), d = new Date(agora);
-  d.setHours(18, 30, 0, 0);
+  d.setHours(19, 15, 0, 0);
   if (agora >= d) d.setDate(d.getDate() + 1);
   while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
   const dias = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
-  return d.toDateString() === agora.toDateString() ? "hoje, 18h30"
-    : `${dias[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}, 18h30`;
+  return d.toDateString() === agora.toDateString() ? "hoje, 19h15"
+    : `${dias[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}, 19h15`;
 }
-// o robô deveria ter fechado o último dia útil (com folga até 20h30); feriado também cai aqui
+// o robô deveria ter fechado o último dia útil (com folga até 21h15); feriado também cai aqui
 function atrasado() {
   if (!D?.est.ultimo_pregao) return false;
   const agora = agoraBR(), d = new Date(agora);
-  d.setHours(20, 30, 0, 0);
+  d.setHours(21, 15, 0, 0);
   if (agora < d) d.setDate(d.getDate() - 1);
   while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
   return D.est.ultimo_pregao < isoDia(d);
@@ -407,7 +407,7 @@ const segFaixa = () => `<div class="seg" role="group" aria-label="Período">${["
 const selAtivo = (id, atual) => `<select class="pick" id="${id}" aria-label="Escolher ativo">${Object.entries(grupos()).map(([g, l]) =>
   `<optgroup label="${NOMES[g]}">${l.map(a => `<option value="${a}" ${a === atual ? "selected" : ""}>${a}</option>`).join("")}</optgroup>`).join("")}</select>`;
 const vazio = () => `<div class="empty"><b>O robô ainda não rodou.</b><br>A carteira simulada de R$ 6.000 é montada no primeiro fechamento de dia útil,
-  às 18h30 (Brasília). Enquanto isso, a aba <b>Mercado</b> mostra as cotações do dia e a aba <b>Regras</b> explica como ele decide.</div>`;
+  às 19h15 (Brasília). Enquanto isso, a aba <b>Mercado</b> mostra as cotações do dia e a aba <b>Regras</b> explica como ele decide.</div>`;
 const tile = (lab, v, s, cls = "") => `<div class="blk"><div class="lab">${lab}</div><div class="v num ${cls}">${v}</div><div class="s num">${s}</div></div>`;
 
 // =====================================================================  RESUMO
@@ -494,7 +494,7 @@ function fechamento(lin) {
     ${f.alertas?.length ? `<ul class="alertas">${f.alertas.map(a => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
     ${f.vetos.length ? `<ul class="alertas">${f.vetos.map(v => `<li>⏸️ Porteiro vetou ${v.tipo.toLowerCase()} de <b>${esc(v.ativo)}</b> (${brl(v.valor)}): ${esc(v.trava)}</li>`).join("")}</ul>` : ""}
     <div class="tiles">
-      ${tile("Última execução do robô", quando, late ? "sem fechamento no último dia útil (atraso ou feriado)" : "em dia · sinal de vida confere às 20h30", late ? "neg" : "")}
+      ${tile("Última execução do robô", quando, late ? "sem fechamento no último dia útil (atraso ou feriado)" : "em dia · sinal de vida confere às 21h15", late ? "neg" : "")}
       ${tile("Última operação", ult ? `${ult.tipo === "COMPRA" ? "Compra" : "Venda"} ${esc(ult.ativo)}` : "—", ult ? `${dataBR(ult.data)} · ${brl(+ult.valor)}` : "nenhuma ainda")}
       ${tile("Mais perto de agir", perto ? perto.a : "—", perto ? (perto.d <= 0 ? "no gatilho de reforço" : `falta cair ${pc0(perto.d)} para o reforço`) : "")}
       ${tile("Custos e IR pagos", brl(c.custos + c.ir_pago), `custos ${brl(c.custos)} · IR ${brl(c.ir_pago)}`)}
@@ -552,7 +552,7 @@ function tMercado() {
     <td class="r num">${x.dGat == null ? "—" : x.dGat <= 0 ? `<span class="chip buy">no gatilho</span>` : pc0(x.dGat)}</td></tr>`;
   return `
   <div class="banner">${temM ? `<b>Cotações de ${doDia ? "hoje" : dataBR(M.atualizado.slice(0, 10))}, atualizadas às ${M.atualizado.slice(11, 16)}.</b> Atraso de cerca de 15 a 30 minutos (Yahoo Finance). Atualiza a cada 15 minutos, das 10h às 18h45.`
-    : `<b>Cotações do dia indisponíveis agora.</b> Mostrando os preços do último fechamento do robô (${dataBR(D.est.ultimo_pregao)}).`} O robô só decide no fechamento, às 18h30.</div>
+    : `<b>Cotações do dia indisponíveis agora.</b> Mostrando os preços do último fechamento do robô (${dataBR(D.est.ultimo_pregao)}).`} O robô só decide no fechamento, às 19h15.</div>
   ${temM ? `<section class="hero idx">
     ${Object.entries(INDICES).map(([k, nome]) => { const m = M.ativos[k]; return m ? `<div class="card kpi"><div class="lab">${nome}</div><div class="v num">${k === "IBOV" ? n2(m.preco, 0) : brl(m.preco)}</div><div class="s num ${sinal(m.var)}" style="font-weight:700">${pct(m.var, 2)} no dia</div></div>` : ""; }).join("")}
     <div class="card kpi"><div class="lab">Ativos da carteira no dia</div><div class="v num"><span class="pos">${altas} em alta</span></div><div class="s num neg" style="font-weight:700">${baixas} em baixa</div></div>
@@ -712,7 +712,7 @@ function tRegras() {
   const linha = (a, b) => `<tr><td class="solto">${a}</td><td class="r solto">${b}</td></tr>`;
   return `
   <section class="card full">
-    <h2>Como o robô decide</h2><p class="sub">Regras da versão V3, a que foi melhor no teste com dados passados. Ele decide sozinho uma vez por dia útil, no fechamento (18h30), e não afrouxa nenhuma regra por conta própria.</p>
+    <h2>Como o robô decide</h2><p class="sub">Regras da versão V3, a que foi melhor no teste com dados passados. Ele decide sozinho uma vez por dia útil, no fechamento (19h15), e não afrouxa nenhuma regra por conta própria.</p>
     <div class="rules">
       <div class="rule"><b>🟢 Reforço nas quedas</b><p>Ativo 15% abaixo do preço médio: compra mais cerca de R$ 250 com a reserva. Segundo reforço com mais 12% de queda. No máximo 2 por mês, nenhum ativo acima de 2× o alvo, e só com proventos em dia.</p></div>
       <div class="rule"><b>🔵 Realização de lucro</b><p>Posição acima de 2× o alvo volta para o alvo. No primeiro pregão de cada trimestre, rebalanceia tudo. FIIs só recebem compras, porque vender cota paga 20% de IR.</p></div>
@@ -738,7 +738,7 @@ function tRegras() {
         ${linha("📊 Fechamento, todo dia útil", "operações, vetos, proventos e patrimônio")}${linha("🗓️ Relatório semanal, na sexta", "semana contra as referências")}
         ${linha("ℹ️ Informativo", "continua operando")}${linha("⏸️ Pausa no ativo", "pula o ativo e retoma sozinho")}
         ${linha("🛑 Parada técnica", "não altera a carteira; tenta no dia seguinte")}${linha("🚨 Urgente", "para tudo e não grava")}
-        ${linha("📵 Sinal de vida, às 20h30", "dispara o robô se ele não rodou")}</tbody></table></div></div>
+        ${linha("📵 Sinal de vida, às 21h15", "dispara o robô se ele não rodou")}</tbody></table></div></div>
     <div class="card"><h2>Quando avançar e quando desistir</h2><p class="sub">Critérios combinados antes de pensar em dinheiro real.</p>
       <div class="tbl-wrap"><table><tbody>
         ${linha("Tempo de simulado", "pelo menos 90 dias e uma revisão trimestral")}${linha("Falhas", "nenhuma parada sem causa entendida")}

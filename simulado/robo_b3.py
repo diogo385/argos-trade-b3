@@ -36,6 +36,11 @@ CUSTO = 0.0013
 ORDEM_MIN = 30.0
 REFORCO_1, REFORCO_2, REFORCOS_MES, TETO = 0.85, 0.75, 2, 2.0
 CORTE_DIV_ACAO, CORTE_DIV_FII, SAUDE_MIN_REFORCO = 0.30, 0.25, -0.10
+CORTE_PERSISTE = 40          # pregões seguidos (cerca de 2 meses) com o corte confirmado antes de vender
+PAGAMENTOS_MIN_FII = 10      # FII com menos pagamentos que isso em 12 meses = histórico com buraco: não mede
+APORTE_MAX = 750.0           # custo máximo acumulado num ativo (compra inicial + reforços)
+QUEDA_MAX_REFORCO = 0.40     # não reforça ativo que já caiu mais que isso do preço médio
+FALHAS_MAX = 5               # mais ativos sem cotação que isso = falha geral: o robô não roda
 ALERTA_QUEDA = 0.35
 IR_ACOES, IR_FII, IR_CAIXA, ISENCAO = 0.15, 0.20, 0.15, 20_000.0
 
@@ -48,7 +53,7 @@ VENDAS_MES_LIMITE = 19_000.0  # margem para não perder a isenção de R$ 20 mil
 PREGOES_GRAFICO, MM_LONGA = 130, 200
 
 YAHOO = ("https://query{n}.finance.yahoo.com/v8/finance/chart/{t}.SA"
-         "?range=2y&interval=1d&events=div%2Csplit")
+         "?range=5y&interval=1d&events=div%2Csplit")
 BCB = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.12/dados?formato=json&dataInicial={i}&dataFinal={f}"
 CAB = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64)", "Accept": "application/json"}
 
@@ -97,7 +102,7 @@ def baixar_json(url):
 
 
 def cotacao(t):
-    """Último fechamento (sem ajuste), data do pregão, proventos e desdobramentos dos últimos 2 anos."""
+    """Último fechamento (sem ajuste), data do pregão, proventos e desdobramentos dos últimos 5 anos."""
     j = None
     for n in (1, 2, 1):
         try:
@@ -130,12 +135,23 @@ def cdi_desde(inicio, fim):
     return out
 
 
-def saude(divs, hoje):
-    """Variação dos proventos dos últimos 12 meses contra os 12 anteriores (None se não dá para medir)."""
+def saude(divs, hoje, fii=False):
+    """Proventos dos últimos 12 meses contra a média anual dos 3 anos anteriores (None se não dá para medir).
+
+    Comparar com a média de 3 anos evita vender por causa de um ano anterior com dividendo extraordinário.
+    Em FII, janela com poucos pagamentos indica buraco no histórico do Yahoo e fica fora da conta.
+    """
     h = date.fromisoformat(hoje)
-    a = sum(v for d, v in divs if h - timedelta(365) < date.fromisoformat(d) <= h)
-    b = sum(v for d, v in divs if h - timedelta(730) < date.fromisoformat(d) <= h - timedelta(365))
-    return None if b <= 0 else a / b - 1
+    def janela(k):  # k = 0 são os últimos 12 meses; 1, 2 e 3 são os anos anteriores
+        itens = [v for d, v in divs if h - timedelta(365 * (k + 1)) < date.fromisoformat(d) <= h - timedelta(365 * k)]
+        return sum(itens), len(itens)
+    atual, n = janela(0)
+    if fii and n < PAGAMENTOS_MIN_FII:
+        return None
+    anteriores = [t for t, q in (janela(k) for k in (1, 2, 3)) if t > 0 and (not fii or q >= PAGAMENTOS_MIN_FII)]
+    if not anteriores:
+        return None
+    return atual / (sum(anteriores) / len(anteriores)) - 1
 
 
 # ---------------------------------------------------------------- carteira (dicionário salvo em JSON)
@@ -222,7 +238,7 @@ class Porteiro:
     def trava(self, tipo, a, reais, livre, tese):
         i = self.info.get(a, {})
         if i.get("velho"):
-            return f"cotação velha (último negócio em {i['data'][8:10]}/{i['data'][5:7]})"
+            return f"cotação velha (último negócio em {i['data'][8:10]}/{i['data'][5:7]})" if i.get("data") else "sem cotação hoje"
         if i.get("suspeito"):
             return f"preço suspeito ({pct(i['var'], 0)} no dia sem desdobramento)"
         if abs(i.get("var", 0)) > VOL_MAX_DIA:
@@ -241,6 +257,8 @@ class Porteiro:
     def comprar(self, a, reais, ops, motivo, livre=False):
         p = self.px[a]
         reais = min(reais, self.c["caixa"])
+        if not p:
+            return self._passar("COMPRA", a, reais, motivo, livre, False) and 0
         if math.floor(reais / (p * (1 + CUSTO))) * p < max(ORDEM_MIN, p):
             return 0  # não viraria ordem: nada a aprovar
         return self._passar("COMPRA", a, reais, motivo, livre, False) and self._feito(
@@ -248,6 +266,8 @@ class Porteiro:
 
     def vender(self, a, reais, ops, motivo, livre=False, tese=False, minimo=ORDEM_MIN):
         p = self.px[a]
+        if not p:
+            return 0
         n = min(self.c["qtd"].get(a, 0), math.floor(reais / p + 1e-9))
         if n <= 0 or n * p < minimo:
             return 0
@@ -286,7 +306,8 @@ def decidir(est, P, px, dados, hoje, ops, alertas):
         if r["ir_pago"]:
             alertas.append(f"🧾 IR do mês pago (DARF simulado): {brl(r['ir_pago'])}")
         est["reforcos_mes"] = 0
-    sau = {a: saude(dados[a]["divs"], hoje) for a in DIVIDENDOS + FIIS}
+    sau = {a: saude(dados[a]["divs"], hoje, a in FIIS) for a in DIVIDENDOS + FIIS}
+    corte_dias = est.setdefault("corte_dias", {})
     est["saude_proventos"] = {a: (round(s, 4) if s is not None else None) for a, s in sau.items()}
     v = valor(c, px)
     alvo = v * (1 - FRACAO_RESERVA) / len(ATIVOS)
@@ -296,9 +317,15 @@ def decidir(est, P, px, dados, hoje, ops, alertas):
     for a in list(c["qtd"]):
         s = sau.get(a)
         corte = CORTE_DIV_FII if a in FIIS else CORTE_DIV_ACAO
-        if a in sau and s is not None and s < -corte:
+        cortou = a in sau and s is not None and s < -corte
+        corte_dias[a] = corte_dias.get(a, 0) + 1 if cortou else 0
+        if cortou and corte_dias[a] == 1:
+            alertas.append(f"ℹ️ {a}: proventos de 12 meses {abs(s) * 100:.0f}% abaixo da média dos 3 anos anteriores. "
+                           f"Em observação: saio se continuar assim por {CORTE_PERSISTE} pregões.")
+        if cortou and corte_dias[a] >= CORTE_PERSISTE:
             if P.vender(a, c["qtd"][a] * px[a] + 1e-6, ops,
-                        f"proventos de 12 meses caíram {abs(s) * 100:.0f}% (limite {corte * 100:.0f}%): tese de renda quebrada",
+                        f"proventos de 12 meses {abs(s) * 100:.0f}% abaixo da média de 3 anos (limite {corte * 100:.0f}%) "
+                        f"há {CORTE_PERSISTE} pregões: tese de renda quebrada",
                         tese=True, minimo=0):
                 est["fora"][a] = "proventos"
         elif c["qtd"][a] * px[a] > TETO * alvo:
@@ -323,6 +350,8 @@ def decidir(est, P, px, dados, hoje, ops, alertas):
         gatilho = REFORCO_1 if k == 0 else (REFORCO_2 / REFORCO_1 if k == 1 else 0)
         s = sau.get(a)
         if gatilho and px[a] <= c["pm"][a] * gatilho and (s is None or s > SAUDE_MIN_REFORCO) \
+                and px[a] >= c["pm"][a] * (1 - QUEDA_MAX_REFORCO) \
+                and c["qtd"][a] * c["pm"][a] + slot <= APORTE_MAX \
                 and c["qtd"][a] * px[a] + slot <= TETO * alvo and c["caixa"] > slot * 1.05:
             queda = px[a] / c["pm"][a] - 1
             if P.comprar(a, slot, ops, f"{k + 1}º reforço: preço {abs(queda) * 100:.0f}% abaixo do preço médio, proventos em dia"):
@@ -394,8 +423,16 @@ def render_cdi(est, hoje):
 
 def coletar(hoje, ref, registro, alertas, ultimos, susp_dias):
     """Baixa as cotações e marca o que não é confiável: cotação velha, salto suspeito, volatilidade extrema."""
-    dados = {a: cotacao(a) for a in ATIVOS}
-    dados["BOVA11"] = ref
+    dados, falhou = {"BOVA11": ref}, []
+    for a in ATIVOS:
+        try:
+            dados[a] = cotacao(a)
+        except Exception:  # um ativo sem cotação não derruba o dia: fica de fora das operações
+            ult = ultimos.get(a) or 0.0
+            dados[a] = {"preco": ult, "data": "", "divs": [], "splits": [], "anterior": ult, "serie": [], "falhou": True}
+            falhou.append(a)
+    if len(falhou) > FALHAS_MAX:
+        raise RuntimeError(f"sem cotação de {len(falhou)} ativos ({', '.join(falhou)}): falha geral dos dados")
     try:
         dados["XFIX11"] = cotacao("XFIX11")
     except RuntimeError:  # referência do IFIX indisponível: repete o último preço conhecido
@@ -406,9 +443,11 @@ def coletar(hoje, ref, registro, alertas, ultimos, susp_dias):
     px, info = {}, {}
     for a, d in dados.items():
         var = d["preco"] / d["anterior"] - 1 if d.get("anterior") else 0.0
+        if d.get("falhou"):
+            d["data"] = ""
         split_hoje = any(x[0] == d["data"] for x in d["splits"])
         bom = ultimos.get(a) or d.get("anterior") or d["preco"]      # último preço em que o robô confiou
-        salto = d["preco"] / bom - 1
+        salto = d["preco"] / bom - 1 if bom else 0.0
         suspeito = abs(salto) > SALTO_SUSPEITO and not split_hoje
         if suspeito and susp_dias.get(a, 0) >= 2:   # 3 pregões seguidos no novo patamar: o preço é real
             suspeito = False
@@ -420,6 +459,9 @@ def coletar(hoje, ref, registro, alertas, ultimos, susp_dias):
         if a in ATIVOS and suspeito:
             alertas.append(f"⏸️ {a}: preço suspeito ({pct(salto, 0)} sem desdobramento). Mantenho o último preço confiável e "
                            "não opero nele hoje.")
+        elif a in falhou:
+            alertas.append(f"⏸️ {a}: sem cotação no Yahoo hoje (código mudou ou falha de dados). Mantenho o último preço e "
+                           "não opero nele; se repetir, vale conferir o código do ativo.")
         elif a in ATIVOS and i["velho"]:
             alertas.append(f"⏸️ {a}: sem negócio hoje (última cotação de {d['data'][8:10]}/{d['data'][5:7]}). Não opero nele hoje.")
     velhos = [a for a in ATIVOS if info[a]["velho"]]
@@ -487,7 +529,7 @@ def main(agora=None):
     agora = agora or datetime.now(BRASILIA)
     if os.environ.get("TESTE_TELEGRAM") == "true":   # só confere se o bot está ligado; não mexe na carteira
         telegram(f"{ROTULO} · ✅ Teste do Telegram\nO bot do B3 está conectado. A carteira simulada começa no "
-                 "fechamento de dia útil, às 18h30, e você recebe o resumo aqui todo dia útil.")
+                 "fechamento de dia útil, às 19h15, e você recebe o resumo aqui todo dia útil.")
         return
     hoje = agora.date().isoformat()
     ref = cotacao("BOVA11")
@@ -512,7 +554,10 @@ def main(agora=None):
         slot = (CAPITAL - RESERVA) / len(ATIVOS)
         for a in ATIVOS:
             P.comprar(a, slot, ops, "montagem inicial", livre=True)
-            comprar(est["parada"], a, slot, px[a], None, "")
+            if px[a] and not info[a]["velho"]:
+                comprar(est["parada"], a, slot, px[a], None, "")
+            else:
+                est.setdefault("parada_pendente", []).append(a)
         registro.append(f"estratégia: montagem inicial, {len(ATIVOS)} compras de {brl(slot)} propostas")
         novo, cdi_ok = True, True
     else:
@@ -521,6 +566,10 @@ def main(agora=None):
         if not cdi_ok:
             registro.append("coletor: Banco Central fora do ar, CDI do dia estimado pela última taxa")
         proventos_do_dia({"robo": est["carteira"], "parada": est["parada"]}, dados, est["ultimo_pregao"], hoje, prov)
+        for a in list(est.get("parada_pendente", [])):   # a carteira parada também entra no ativo que faltou
+            if px[a] and not info[a]["velho"] and not info[a]["suspeito"]:
+                comprar(est["parada"], a, (CAPITAL - RESERVA) / len(ATIVOS), px[a], None, "")
+                est["parada_pendente"].remove(a)
         P = Porteiro(est["carteira"], px, info, registro)
         decidir(est, P, px, dados, hoje, ops, alertas)
         registro.append(f"estratégia: {len(ATIVOS)} ativos checados, {P.aprovadas + len(P.vetos)} ordens propostas")
@@ -543,6 +592,7 @@ def main(agora=None):
     est["grupos"] = {"valorizacao": VALORIZACAO, "dividendos": DIVIDENDOS, "fiis": FIIS}
     est["capital"], est["reserva"] = CAPITAL, RESERVA
     est["ultima_execucao"] = agora.isoformat(timespec="minutes")
+    est["limites"] = {"aporte_max": APORTE_MAX, "queda_max_reforco": QUEDA_MAX_REFORCO, "corte_persiste": CORTE_PERSISTE}
     est["travas"] = {"ordem_max": ORDEM_MAX, "max_ops_dia": MAX_OPS_DIA, "vol_max_dia": VOL_MAX_DIA,
                      "salto_suspeito": SALTO_SUSPEITO, "vendas_mes_limite": VENDAS_MES_LIMITE}
     registro.append(f"diário: patrimônio {brl(v)} · caixa {brl(c['caixa'])} · {len(ops)} operações · {len(prov)} proventos")

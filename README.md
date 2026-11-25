@@ -12,7 +12,7 @@ Parte da família **Argos Trade** (na mitologia grega, Argos é o gigante de cem
 | `backtest/RESULTADO.md` | Resultado, gerado automaticamente pelo GitHub Actions |
 | `index.html` | **Monitor web** (tema claro, 5 abas: Resumo, Mercado, Histórico, Extrato e Regras): https://diogo385.github.io/argos-trade-b3/ |
 | `simulado/mercado.py` | Cotações do dia a cada 15 minutos durante o pregão, publicadas no ramo `mercado` (atraso de 15 a 30 minutos) |
-| `simulado/` | **Robô simulado** com R$ 6.000 de mentira, rodando todo dia útil às 18h30 e avisando no Telegram |
+| `simulado/` | **Robô simulado** com R$ 6.000 de mentira, rodando todo dia útil às 19h15 e avisando no Telegram |
 | `ANALISE.md` | Análise e sugestão das 15 ações e 5 FIIs da carteira simulada |
 | `backtest/TRIAGEM.md` | Triagem com números de 58 ações e 29 FIIs (gerada pelo Actions) |
 
@@ -21,8 +21,8 @@ No GitHub: **Actions → Argos Trade B3 · backtest → Run workflow**. Ele tamb
 e salva o resultado em `backtest/RESULTADO.md`.
 
 ## Robô simulado
-Roda sozinho todo dia útil às 18h30 (Brasília) pelo GitHub Actions e aplica as regras da versão V3 de
+Roda sozinho todo dia útil às 19h15 (Brasília) pelo GitHub Actions e aplica as regras da versão V3 de
 `backtest/ROBO_REGRAS.md`: reforço nas quedas com a reserva, realização de lucro, saída por corte de proventos e
-rebalanceamento trimestral. Toda ordem passa pelo porteiro de risco (`PLANO.md`, seção 10). Um sinal de vida confere às 20h30 se o robô rodou, e toda sexta sai um relatório semanal. Registra tudo em `simulado/` (`historico.csv`, `operacoes.csv`, `proventos.csv`, `estado.json`).
+rebalanceamento trimestral. Toda ordem passa pelo porteiro de risco (`PLANO.md`, seção 10). Um sinal de vida confere às 21h15 se o robô rodou, e toda sexta sai um relatório semanal. Registra tudo em `simulado/` (`historico.csv`, `operacoes.csv`, `proventos.csv`, `estado.json`).
 
 Telegram: cadastre `TELEGRAM_TOKEN` e `TELEGRAM_CHAT_ID` em Settings → Secrets and variables → Actions.
