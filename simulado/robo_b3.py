@@ -13,7 +13,7 @@ Regras (backtest/ROBO_REGRAS.md, versão V3):
   - Queda de 35% do topo numa ação de valorização: só alerta, não vende.
 Arquivos: estado.json, historico.csv, operacoes.csv, proventos.csv (nesta pasta).
 """
-import csv, json, math, os, sys, time, urllib.parse, urllib.request
+import csv, json, math, os, sys, time, urllib.error, urllib.parse, urllib.request
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -62,6 +62,12 @@ def telegram(texto):
     dados = urllib.parse.urlencode({"chat_id": chat, "text": texto}).encode()
     try:
         urllib.request.urlopen(f"https://api.telegram.org/bot{token}/sendMessage", dados, timeout=30).read()
+    except urllib.error.HTTPError as e:  # mostra o motivo do Telegram (sem expor o token)
+        try:
+            motivo = json.loads(e.read()).get("description", "")
+        except Exception:
+            motivo = ""
+        print(f"Falha ao enviar para o Telegram: HTTP {e.code} {motivo}")
     except Exception as e:  # falha de aviso não derruba o robô
         print(f"Falha ao enviar para o Telegram: {type(e).__name__}")
 
