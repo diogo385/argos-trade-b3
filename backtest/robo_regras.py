@@ -27,9 +27,13 @@ TETO_PESO = 2.0                        # nenhum ativo passa de 2x o alvo (10% do
 CORTE_DIV_ACAO, CORTE_DIV_FII = 0.30, 0.25
 STOP = 0.35
 VERSOES = [("v1", "V1 · base (sem swing, rebalanceia a cada 3 meses, reserva parada)"),
-           ("v2", "V2 · + reforço nas quedas com a reserva"),
-           ("v3", "V3 · + realização de lucro e saída por corte de proventos"),
-           ("v4", "V4 · + stop automático de 35% nas ações de valorização")]
+           ("v3", "V3 · regras originais (reforço, realização em 2x, saída por proventos contra o ano anterior)"),
+           ("v3b", "V3b · auditoria: proventos contra a média de 3 anos com persistência, teto de aporte e piso de queda"),
+           ("v3c", "V3c · V3b + realização só com lucro de 25% (evita desfazer o reforço)"),
+           ("v5", "V5 · V3c + saída das ações de valorização (observação e venda de metade)")]
+NOVAS = ("v3b", "v3c", "v5")
+APORTE_MAX, QUEDA_MAX_REFORCO, LUCRO_MIN_REALIZA = 750.0, 0.40, 0.25
+OBS_QUEDA, OBS_PREGOES = 0.35, 60
 
 
 def carregar():
@@ -58,14 +62,29 @@ def saude_proventos(divs, d):
     return None if b <= 0 else a / b - 1
 
 
-def simular(versao, datas, px, fator, divs):
+def saude_3anos(divs, d, fii):
+    """Últimos 12 meses contra a média dos 3 anos anteriores; FII precisa de 10 pagamentos por janela."""
+    hoje = date.fromisoformat(d)
+    def janela(k):
+        it = [v for x, v in divs if hoje - timedelta(365 * (k + 1)) < x <= hoje - timedelta(365 * k)]
+        return sum(it), len(it)
+    atual, n = janela(0)
+    if fii and n < 10:
+        return None
+    ant = [t for t, q in (janela(k) for k in (1, 2, 3)) if t > 0 and (not fii or q >= 10)]
+    return None if not ant else atual / (sum(ant) / len(ant)) - 1
+
+
+def simular(versao, datas, px, fator, divs, mm=None):
     alvo = C.VALORIZACAO + C.DIVIDENDOS + C.FIIS
     c = Carteira(CAPITAL)
     slot = (CAPITAL - RESERVA) / len(alvo)
     for a in alvo:
         c.comprar(a, slot, px[datas[0]][a])
     ops0 = c.ops
-    ev = {"reforço": 0, "realização": 0, "saída por proventos": 0, "stop": 0, "volta": 0}
+    ev = {"reforço": 0, "realização": 0, "saída por proventos": 0, "stop": 0, "volta": 0, "meia venda": 0}
+    nova = versao in NOVAS
+    corte_meses, obs = {}, {}
     fora, topo, reforcos, saude = {}, {}, {a: 0 for a in alvo}, {}
     reforcos_mes, mes = 0, None
     pico, queda, ant, anual = 0.0, 0.0, None, {}
@@ -77,23 +96,28 @@ def simular(versao, datas, px, fator, divs):
                 c.fechar_mes()
                 reforcos_mes = 0
                 if versao != "v1":   # proventos medidos uma vez por mês
-                    saude = {a: saude_proventos(divs[a], d) for a in C.DIVIDENDOS + C.FIIS}
+                    saude = {a: (saude_3anos(divs[a], d, a in C.FIIS) if nova else saude_proventos(divs[a], d))
+                             for a in C.DIVIDENDOS + C.FIIS}
+                    for a, sv in saude.items():   # persistência: meses seguidos abaixo do corte
+                        lim = CORTE_DIV_FII if a in C.FIIS else CORTE_DIV_ACAO
+                        corte_meses[a] = corte_meses.get(a, 0) + 1 if (sv is not None and sv < -lim) else 0
             v = c.valor(p)
             alvo_ativo = v * (1 - FRACAO_RESERVA) / len(alvo)
             ativos = [a for a in alvo if a not in fora]
 
             # 1. saídas
-            if versao in ("v3", "v4"):
+            if versao in ("v3", "v4") or nova:
                 for a in ativos:
                     if a in fora or not c.qtd.get(a):
                         continue
                     s = saude.get(a)
                     corte = CORTE_DIV_FII if a in C.FIIS else CORTE_DIV_ACAO
-                    if s is not None and s < -corte:
+                    if s is not None and s < -corte and (not nova or corte_meses.get(a, 0) >= 2):
                         c.vender(a, c.qtd[a] * p[a] + 1e-6, p[a], minimo=0)
                         fora[a] = "proventos"
                         ev["saída por proventos"] += 1
-                    elif c.qtd[a] * p[a] > TETO_PESO * alvo_ativo:
+                    elif c.qtd[a] * p[a] > TETO_PESO * alvo_ativo and \
+                            (versao not in ("v3c", "v5") or p[a] >= c.pm[a] * (1 + LUCRO_MIN_REALIZA)):
                         c.vender(a, c.qtd[a] * p[a] - alvo_ativo, p[a])
                         ev["realização"] += 1
             if versao == "v4":
@@ -106,6 +130,22 @@ def simular(versao, datas, px, fator, divs):
                         fora[a] = ("stop", d)
                         topo.pop(a, None)
                         ev["stop"] += 1
+            # V5: ação de valorização 35% abaixo do topo e abaixo da média de 200 dias fica em observação (sem reforço);
+            # depois de 60 pregões assim, vende metade
+            if versao == "v5":
+                for a in C.VALORIZACAO:
+                    if not c.qtd.get(a):
+                        obs.pop(a, None)
+                        continue
+                    topo[a] = max(topo.get(a, p[a]), p[a])
+                    ruim = p[a] < topo[a] * (1 - OBS_QUEDA) and p[a] < mm[d][a]
+                    obs[a] = obs.get(a, 0) + 1 if ruim else 0
+                    if obs[a] >= OBS_PREGOES:
+                        n0 = c.qtd[a]
+                        c.vender(a, c.qtd[a] * p[a] / 2, p[a], minimo=0)
+                        if c.qtd.get(a, 0) < n0:
+                            ev["meia venda"] += 1
+                        obs[a] = 0
             # volta: proventos recuperados ou, após stop, 60 pregões e preço acima da mínima + 20%
             for a, motivo in list(fora.items()):
                 if motivo == "proventos" and (saude.get(a) or 0) >= 0:
@@ -124,8 +164,12 @@ def simular(versao, datas, px, fator, divs):
                     gatilho = REFORCO_1 if reforcos[a] == 0 else REFORCO_2 if reforcos[a] == 1 else 0
                     s = saude.get(a)
                     saudavel = s is None or s > -0.10
+                    if nova and (p[a] < c.pm[a] * (1 - QUEDA_MAX_REFORCO) or c.qtd[a] * c.pm[a] + slot > APORTE_MAX
+                                 or obs.get(a, 0) > 0):
+                        continue
+                    teto = (3.0 if versao in ("v3c", "v5") else TETO_PESO) * alvo_ativo
                     if gatilho and p[a] <= c.pm[a] * gatilho / (1 if reforcos[a] == 0 else REFORCO_1) and saudavel \
-                            and c.qtd[a] * p[a] + slot <= TETO_PESO * alvo_ativo and c.caixa > slot * 1.05:
+                            and c.qtd[a] * p[a] + slot <= teto and c.caixa > slot * 1.05:
                         n0 = c.qtd[a]
                         c.comprar(a, slot, p[a])
                         if c.qtd[a] > n0:
@@ -143,6 +187,8 @@ def simular(versao, datas, px, fator, divs):
                     if excesso > 0 and a not in C.FIIS:
                         c.vender(a, excesso, p[a])
                 for a in ativos:
+                    if obs.get(a, 0) > 0:
+                        continue
                     falta = alvo_ativo - c.qtd.get(a, 0) * p[a]
                     reserva_minima = v * FRACAO_RESERVA * 0.5
                     if falta > 0 and c.caixa - falta > reserva_minima:
@@ -186,12 +232,14 @@ def main(saida):
     if falta:
         raise SystemExit(f"sem dados para {falta}")
     todas = sorted(series["BOVA11"])
-    px, ult = {}, {}
+    px, ult, hist, mm = {}, {}, {a: [] for a in series}, {}
     for d in todas:
         for a, s in series.items():
             if d in s:
                 ult[a] = s[d]
+                hist[a].append(s[d])
         px[d] = dict(ult)
+        mm[d] = {a: sum(h[-200:]) / len(h[-200:]) for a, h in hist.items() if h}
     # mesmo início do backtest anterior: todos os ativos com pelo menos 200 pregões
     contagem = {a: 0 for a in alvo}
     datas = []
@@ -207,7 +255,7 @@ def main(saida):
             j += 1
         fator[d] = acum
 
-    res = {v: simular(v, datas, px, fator, divs) for v, _ in VERSOES}
+    res = {v: simular(v, datas, px, fator, divs, mm) for v, _ in VERSOES}
     refs = [("cdi", "100% CDI (líquido de IR)", None), ("bova", "100% Ibovespa (BOVA11)", "BOVA11")]
     if "XFIX11" in series and all("XFIX11" in px[d] for d in datas):
         refs.append(("ifix", "100% IFIX (XFIX11)", "XFIX11"))
@@ -221,15 +269,16 @@ def main(saida):
           f"- **Capital:** {rs(CAPITAL)} = {rs(CAPITAL - RESERVA)} nos 20 ativos de `ANALISE.md` (5% cada) "
           f"+ {rs(RESERVA)} de reserva rendendo CDI.",
           f"- **Período:** {fdata(datas[0])} a {fdata(datas[-1])} ({len(datas)} pregões). Valores líquidos de custos e IR.",
-          "- **Reforço:** quando o ativo cai 15% abaixo do preço médio (e de novo com mais 12%), compra mais uma parcela de "
-          "~R$ 250 com a reserva. Limites: 2 reforços por mês e nenhum ativo acima de 2x o peso-alvo. Não reforça se os "
-          "proventos dos últimos 12 meses caíram mais de 10%.",
-          "- **Realização de lucro:** posição acima de 2x o peso-alvo volta para o alvo.",
-          "- **Saída por proventos:** ação de dividendos com proventos 30% menores em 12 meses, ou FII com rendimentos 25% "
-          "menores, é vendida; volta quando os proventos se recuperam.",
-          "- **Stop (só V4):** ação de valorização que cai 35% do topo é vendida; pode voltar depois de 60 pregões.",
-          "- **Rebalanceamento a cada 3 meses** em todas as versões; FIIs só recebem compras. A reserva é recomposta para "
-          "~1/6 da carteira.", ""]
+          "- **V3 (original):** reforço a 15% abaixo do preço médio; realização acima de 2x o alvo; saída quando os proventos de "
+          "12 meses caem 30% (ações) ou 25% (FIIs) contra os 12 meses anteriores.",
+          "- **V3b (auditoria):** proventos comparados com a média dos 3 anos anteriores e venda só com o corte confirmado em 2 "
+          "meses seguidos; FII com menos de 10 pagamentos em 12 meses não é medido; no máximo R$ 750 de custo por ativo; "
+          "não reforça ativo que caiu mais de 40% do preço médio.",
+          "- **V3c:** V3b + a realização em 2x o alvo só acontece com lucro de 25% sobre o preço médio, e o reforço pode levar a "
+          "posição até 3x o alvo (antes o reforço era desfeito logo em seguida).",
+          "- **V5:** V3c + ação de valorização 35% abaixo do topo e abaixo da média de 200 dias fica em observação (sem reforço e "
+          "sem recompra); depois de 60 pregões assim, vende metade.",
+          "- **Rebalanceamento a cada 3 meses** em todas as versões; FIIs só recebem compras.", ""]
     if avisos:
         md += ["**Avisos dos dados:** " + "; ".join(avisos) + ".", ""]
     md += ["## Resultado", "",
@@ -239,12 +288,12 @@ def main(saida):
         r = res[k]
         md.append(f"| {nome} | {rs(r['liquido'])} | {pct(r['retorno'])} | {pct(r['anual_pct'], 1)} | "
                   f"−{r['queda'] * 100:.0f}% | {r['ops']} | {rs(r['ir'])} |")
-    md += ["", "## O que o robô fez", "", "| Versão | Reforços | Realizações | Saídas por proventos | Stops | Voltas |",
+    md += ["", "## O que o robô fez", "", "| Versão | Reforços | Realizações | Saídas por proventos | Vendas de metade | Voltas |",
            "|---|---|---|---|---|---|"]
     for k, nome in VERSOES:
         e = res[k]["eventos"]
         md.append(f"| {nome.split(' · ')[0]} | {e['reforço']} | {e['realização']} | {e['saída por proventos']} | "
-                  f"{e['stop']} | {e['volta']} |")
+                  f"{e['meia venda']} | {e['volta']} |")
     md += ["", "## Ano a ano (retorno bruto)", "", "| Versão | " + " | ".join(anos) + " |", "|---|" + "---|" * len(anos)]
     for k, nome in linhas:
         fa, ant, cel = res[k]["fim_ano"], CAPITAL, []
