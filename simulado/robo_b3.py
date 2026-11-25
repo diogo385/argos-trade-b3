@@ -54,7 +54,8 @@ def pct(v, casas=1):
 
 
 def telegram(texto):
-    token, chat = os.environ.get("TELEGRAM_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
+    token = (os.environ.get("TELEGRAM_TOKEN") or "").strip().removeprefix("bot")   # tolera espaço ou "bot" colado
+    chat = (os.environ.get("TELEGRAM_CHAT_ID") or "").strip()
     print("\n--- mensagem ---\n" + texto + "\n----------------")
     if not token or not chat:
         print("(Telegram não configurado: mensagem só no registro)")
