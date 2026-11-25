@@ -10,9 +10,9 @@ import csv, json, math, statistics, sys, time, urllib.request
 from datetime import datetime, timezone, date
 from pathlib import Path
 
-ACOES = """WEGE3 ITUB4 BPAC11 PRIO3 VALE3 PETR4 EMBR3 RENT3 RADL3 SUZB3 EQTL3 SBSP3 LREN3 TOTS3
-RDOR3 AXIA3 ELET3 GGBR4 VIVA3 ASAI3 B3SA3 CYRE3 CURY3 DIRR3 VBBR3 ENEV3 MBRF3 SMFT3 MULT3 ALOS3
-HYPE3 BBAS3 BBSE3 TAEE11 ISAE4 EGIE3 CMIG4 CPLE3 CPLE6 VIVT3 ITSA4 CXSE3 SAPR11 KLBN11 BBDC4
+ACOES = """WEGE3 ITUB4 BPAC11 PRIO3 VALE3 PETR4 EMBJ3 RENT3 RADL3 SUZB3 EQTL3 SBSP3 LREN3 TOTS3
+RDOR3 AXIA3 GGBR4 VIVA3 ASAI3 B3SA3 CYRE3 CURY3 DIRR3 VBBR3 ENEV3 MBRF3 SMFT3 MULT3 ALOS3
+HYPE3 BBAS3 BBSE3 TAEE11 ISAE4 EGIE3 CMIG4 CPLE3 VIVT3 ITSA4 CXSE3 SAPR11 KLBN11 BBDC4
 SANB11 CPFE3 PSSA3 ABEV3 UGPA3 CSMG3 FLRY3 TIMS3 BRAV3 RECV3 CMIN3 NATU3 POMO4 MOVI3 IRBR3""".split()
 FIIS = """HGLG11 BTLG11 XPLG11 LVBI11 BRCO11 VILG11 KNRI11 XPML11 VISC11 HSML11 PMLL11 HGRU11
 TRXF11 ALZR11 GARE11 PVBI11 HGRE11 KNCR11 KNIP11 KNSC11 CPTS11 IRDM11 RBRR11 MXRF11 RECR11
@@ -40,8 +40,11 @@ def baixar(t):
             time.sleep(2 * (k + 1))
     else:
         return None
-    q = res["indicators"]["quote"][0]
-    adj = res["indicators"]["adjclose"][0]["adjclose"]
+    try:
+        q = res["indicators"]["quote"][0]
+        adj = res["indicators"]["adjclose"][0]["adjclose"]
+    except (KeyError, IndexError, TypeError):
+        return None  # ativo sem histórico ajustado (ex.: incorporado ou deslistado)
     dias = []
     for i, ts in enumerate(res.get("timestamp") or []):
         c, a, v = q["close"][i], adj[i], q["volume"][i]

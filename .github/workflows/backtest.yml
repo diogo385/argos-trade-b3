@@ -5,7 +5,9 @@ on:
   push:
     branches: [main]
     paths:                  # roda sozinho quando o código do backtest muda
-      - "backtest/*.py"
+      - "backtest/config.py"
+      - "backtest/dados.py"
+      - "backtest/simulador.py"
       - ".github/workflows/backtest.yml"
 
 permissions:
