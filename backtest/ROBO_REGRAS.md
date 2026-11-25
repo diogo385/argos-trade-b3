@@ -3,12 +3,12 @@
 Gerado pelo GitHub Actions (`backtest/robo_regras.py`).
 
 - **Capital:** R$ 6.000 = R$ 5.000 nos 20 ativos de `ANALISE.md` (5% cada) + R$ 1.000 de reserva rendendo CDI.
-- **Período:** 15/02/2022 a 24/11/2026 (1190 pregões). Valores líquidos de custos e IR.
-- **Reforço:** quando o ativo cai 15% abaixo do preço médio (e de novo com mais 12%), compra mais uma parcela de ~R$ 250 com a reserva. Limites: 2 reforços por mês e nenhum ativo acima de 2x o peso-alvo. Não reforça se os proventos dos últimos 12 meses caíram mais de 10%.
-- **Realização de lucro:** posição acima de 2x o peso-alvo volta para o alvo.
-- **Saída por proventos:** ação de dividendos com proventos 30% menores em 12 meses, ou FII com rendimentos 25% menores, é vendida; volta quando os proventos se recuperam.
-- **Stop (só V4):** ação de valorização que cai 35% do topo é vendida; pode voltar depois de 60 pregões.
-- **Rebalanceamento a cada 3 meses** em todas as versões; FIIs só recebem compras. A reserva é recomposta para ~1/6 da carteira.
+- **Período:** 15/02/2022 a 25/11/2026 (1191 pregões). Valores líquidos de custos e IR.
+- **V3 (original):** reforço a 15% abaixo do preço médio; realização acima de 2x o alvo; saída quando os proventos de 12 meses caem 30% (ações) ou 25% (FIIs) contra os 12 meses anteriores.
+- **V3b (auditoria):** proventos comparados com a média dos 3 anos anteriores e venda só com o corte confirmado em 2 meses seguidos; FII com menos de 10 pagamentos em 12 meses não é medido; no máximo R$ 750 de custo por ativo; não reforça ativo que caiu mais de 40% do preço médio.
+- **V3c:** V3b + a realização em 2x o alvo só acontece com lucro de 25% sobre o preço médio, e o reforço pode levar a posição até 3x o alvo (antes o reforço era desfeito logo em seguida).
+- **V5:** V3c + ação de valorização 35% abaixo do topo e abaixo da média de 200 dias fica em observação (sem reforço e sem recompra); depois de 60 pregões assim, vende metade.
+- **Rebalanceamento a cada 3 meses** em todas as versões; FIIs só recebem compras.
 
 **Avisos dos dados:** XPML11: histórico do Yahoo com erro de base; trocado por VISC11.
 
@@ -16,34 +16,37 @@ Gerado pelo GitHub Actions (`backtest/robo_regras.py`).
 
 | Versão | Valor final líquido | Retorno | Ao ano | Queda máxima | Operações | IR pago |
 |---|---|---|---|---|---|---|
-| V1 · base (sem swing, rebalanceia a cada 3 meses, reserva parada) | R$ 14.177 | +136% | +19,7% | −11% | 123 | R$ 0 |
-| V2 · + reforço nas quedas com a reserva | R$ 14.544 | +142% | +20,4% | −11% | 153 | R$ 0 |
-| V3 · + realização de lucro e saída por corte de proventos | R$ 14.352 | +139% | +20,1% | −10% | 160 | R$ 15 |
-| V4 · + stop automático de 35% nas ações de valorização | R$ 13.129 | +119% | +17,8% | −10% | 156 | R$ 15 |
-| 100% CDI (líquido de IR) | R$ 9.845 | +64% | +10,9% | −0% | 0 | R$ 0 |
-| 100% Ibovespa (BOVA11) | R$ 8.742 | +46% | +8,2% | −21% | 0 | R$ 0 |
-| 100% IFIX (XFIX11) | R$ 7.630 | +27% | +5,2% | −16% | 0 | R$ 0 |
+| V1 · base (sem swing, rebalanceia a cada 3 meses, reserva parada) | R$ 14.283 | +138% | +19,9% | −11% | 123 | R$ 0 |
+| V3 · regras originais (reforço, realização em 2x, saída por proventos contra o ano anterior) | R$ 14.449 | +141% | +20,2% | −10% | 160 | R$ 15 |
+| V3b · auditoria: proventos contra a média de 3 anos com persistência, teto de aporte e piso de queda | R$ 14.390 | +140% | +20,1% | −10% | 149 | R$ 0 |
+| V3c · V3b + realização só com lucro de 25% (evita desfazer o reforço) | R$ 14.163 | +136% | +19,7% | −10% | 140 | R$ 0 |
+| V5 · V3c + saída das ações de valorização (observação e venda de metade) | R$ 13.918 | +132% | +19,3% | −10% | 131 | R$ 0 |
+| 100% CDI (líquido de IR) | R$ 9.849 | +64% | +10,9% | −0% | 0 | R$ 0 |
+| 100% Ibovespa (BOVA11) | R$ 8.887 | +48% | +8,6% | −21% | 0 | R$ 0 |
+| 100% IFIX (XFIX11) | R$ 7.754 | +29% | +5,5% | −16% | 0 | R$ 0 |
 
 ## O que o robô fez
 
-| Versão | Reforços | Realizações | Saídas por proventos | Stops | Voltas |
+| Versão | Reforços | Realizações | Saídas por proventos | Vendas de metade | Voltas |
 |---|---|---|---|---|---|
 | V1 | 0 | 0 | 0 | 0 | 0 |
-| V2 | 17 | 0 | 0 | 0 | 0 |
 | V3 | 19 | 5 | 11 | 0 | 10 |
-| V4 | 15 | 3 | 11 | 10 | 18 |
+| V3b | 17 | 5 | 6 | 0 | 4 |
+| V3c | 15 | 0 | 6 | 0 | 4 |
+| V5 | 13 | 0 | 6 | 0 | 4 |
 
 ## Ano a ano (retorno bruto)
 
 | Versão | 2022 | 2023 | 2024 | 2025 | 2026 |
 |---|---|---|---|---|---|
-| V1 | +14% | +30% | +5% | +35% | +14% |
-| V2 | +16% | +30% | +5% | +36% | +14% |
-| V3 | +16% | +27% | +7% | +35% | +13% |
-| V4 | +13% | +23% | +7% | +31% | +13% |
+| V1 | +14% | +30% | +5% | +35% | +15% |
+| V3 | +16% | +27% | +7% | +35% | +14% |
+| V3b | +16% | +29% | +7% | +32% | +14% |
+| V3c | +15% | +29% | +7% | +32% | +14% |
+| V5 | +14% | +29% | +7% | +31% | +14% |
 | 100% CDI (líquido de IR) | +9% | +11% | +9% | +12% | +11% |
-| 100% Ibovespa (BOVA11) | −4% | +23% | −10% | +35% | +2% |
-| 100% IFIX (XFIX11) | +5% | +17% | −6% | +20% | −8% |
+| 100% Ibovespa (BOVA11) | −4% | +23% | −10% | +35% | +4% |
+| 100% IFIX (XFIX11) | +5% | +17% | −6% | +20% | −7% |
 
 ## Limitações
 
