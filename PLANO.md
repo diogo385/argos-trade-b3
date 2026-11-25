@@ -1,6 +1,6 @@
 # Argos Trade B3 · Plano
 
-Versão 0.1 · 25/11/2026 · fase de simulação
+Versão 0.2 · 25/11/2026 · fase de simulação (robô simulado diário ativo)
 
 ---
 
@@ -85,8 +85,8 @@ Com capital pequeno, a carteira de ações tende a ficar sempre na isenção. Es
 
 | Fase | O que | Situação |
 |---|---|---|
-| 1 | **Backtest** das duas carteiras (2014–2026), com custos, CDI e IR | Em andamento |
-| 2 | **Robô simulado** diário no GitHub Actions, com avisos no Telegram e monitor web | Depois do backtest, se valer a pena |
+| 1 | **Backtest** das carteiras e das regras do robô, com custos, CDI e IR | Concluído (`backtest/`) |
+| 2 | **Robô simulado** diário no GitHub Actions (R$ 6.000, regras V3), com avisos no Telegram | **Ativo desde 25/11/2026** (`simulado/`). Monitor web a fazer. |
 | 3 | Real, com capital pequeno | Só depois de meses de simulado. Exige corretora com automação (ex.: MetaTrader 5, que só roda no Windows). A decidir. |
 
 ---
@@ -98,3 +98,19 @@ Com capital pequeno, a carteira de ações tende a ficar sempre na isenção. Es
 | Cotações diárias ajustadas por proventos | Yahoo Finance (tickers com `.SA`) |
 | CDI diário | Banco Central, série SGS 12 |
 | Execução | GitHub Actions, que tem acesso a esses sites |
+
+---
+
+## 9. Carteira e regras em vigor no robô simulado (desde 25/11/2026)
+
+Carteira de `ANALISE.md` e regras da V3 de `backtest/ROBO_REGRAS.md`, com R$ 6.000 = R$ 5.000 em 20 ativos (R$ 250 cada) + R$ 1.000 de reserva no CDI.
+Esta seção substitui as carteiras de ETFs e de ações da seção 3, que ficaram só como estudo.
+
+| Regra | Como funciona |
+|---|---|
+| Reforço | Ativo 15% abaixo do preço médio → compra mais R$ 250 com a reserva; 2º reforço com mais ~12% de queda. Até 2 por mês; nenhum ativo acima de 2x o alvo; só se os proventos não caíram mais de 10% |
+| Realização de lucro | Posição acima de 2x o alvo volta para o alvo |
+| Saída por tese | Ação de dividendos com proventos −30% em 12 meses, ou FII com −25%: vende tudo; volta quando os proventos se recuperam |
+| Rebalanceamento | Primeiro pregão de cada trimestre; FIIs só recebem compras (venda de FII paga 20%) |
+| Queda forte | Ação de valorização 35% abaixo do topo: **só alerta**, não vende (o stop automático piorou o backtest) |
+| Revisão trimestral | Depois de cada temporada de resultados, revisão da tese de cada ativo com o Claude (lucro, dívida, vacância, P/VP) |
