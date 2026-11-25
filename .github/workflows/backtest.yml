@@ -1,0 +1,47 @@
+name: Argos Trade B3 · backtest
+
+on:
+  workflow_dispatch:        # botão "Run workflow" para rodar na hora
+  push:
+    branches: [main]
+    paths:                  # roda sozinho quando o código do backtest muda
+      - "backtest/*.py"
+      - ".github/workflows/backtest.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: backtest
+  cancel-in-progress: true
+
+jobs:
+  rodar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar biblioteca do gráfico
+        run: pip install matplotlib
+
+      - name: Baixar cotações (Yahoo) e CDI (Banco Central)
+        working-directory: backtest
+        run: python dados.py dados
+
+      - name: Simular as carteiras
+        working-directory: backtest
+        run: python simulador.py dados resultado
+
+      - name: Salvar o resultado no repositório
+        run: |
+          git config user.name "argos-trade-b3"
+          git config user.email "argos-trade-b3@users.noreply.github.com"
+          git add backtest/RESULTADO.md backtest/resultado/
+          git diff --cached --quiet || git commit -m "Argos Trade B3: resultado do backtest de $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"
+          git pull --rebase
+          git push
