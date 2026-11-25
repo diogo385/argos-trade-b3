@@ -1,0 +1,36 @@
+name: Argos Trade B3 · mercado (cotações do dia)
+
+on:
+  schedule:
+    - cron: "*/15 13-21 * * 1-5"   # a cada 15 min, das 10h às 18h45 de Brasília, dias úteis
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mercado
+  cancel-in-progress: true
+
+jobs:
+  cotar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Buscar cotações do dia
+        run: mkdir -p /tmp/mercado && python simulado/mercado.py /tmp/mercado/mercado.json
+      - name: Publicar no ramo mercado (um commit só, sem histórico)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd /tmp/mercado
+          git init -q -b mercado
+          git config user.name "argos-trade-b3"
+          git config user.email "argos-trade-b3@users.noreply.github.com"
+          git add mercado.json
+          git commit -q -m "Cotações de $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" mercado
