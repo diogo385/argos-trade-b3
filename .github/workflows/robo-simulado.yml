@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "30 21 * * 1-5"   # 18h30 de Brasília, dias úteis (feriados: o robô percebe e não opera)
   workflow_dispatch:           # botão "Run workflow" para rodar na hora
+    inputs:
+      teste_telegram:
+        description: "Só testar o Telegram (não mexe na carteira)"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -27,6 +32,7 @@ jobs:
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TESTE_TELEGRAM: ${{ github.event.inputs.teste_telegram }}
         run: python simulado/robo_b3.py
 
       - name: Salvar a carteira simulada no repositório

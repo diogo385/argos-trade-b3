@@ -300,6 +300,10 @@ def render_cdi(est, hoje):
 
 def main(agora=None):
     agora = agora or datetime.now(BRASILIA)
+    if os.environ.get("TESTE_TELEGRAM") == "true":   # só confere se o bot está ligado; não mexe na carteira
+        telegram(f"{ROTULO} · ✅ Teste do Telegram\nO bot do B3 está conectado. A carteira simulada começa no "
+                 "fechamento de dia útil, às 18h30, e você recebe o resumo aqui todo dia útil.")
+        return
     hoje = agora.date().isoformat()
     ref = cotacao("BOVA11")
     if ref["data"] != hoje and not os.environ.get("FORCAR"):
