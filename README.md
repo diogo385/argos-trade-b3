@@ -10,6 +10,7 @@ Parte da família **Argos Trade** (na mitologia grega, Argos é o gigante de cem
 | `PLANO.md` | Regras, carteiras, travas, imposto e fases |
 | `backtest/` | Teste com dados históricos (Yahoo Finance e CDI do Banco Central) das duas carteiras simuladas |
 | `backtest/RESULTADO.md` | Resultado, gerado automaticamente pelo GitHub Actions |
+| `index.html` | **Monitor web** (tema claro): abra pelo GitHub Pages |
 | `simulado/` | **Robô simulado** com R$ 6.000 de mentira, rodando todo dia útil às 18h30 e avisando no Telegram |
 | `ANALISE.md` | Análise e sugestão das 15 ações e 5 FIIs da carteira simulada |
 | `backtest/TRIAGEM.md` | Triagem com números de 58 ações e 29 FIIs (gerada pelo Actions) |

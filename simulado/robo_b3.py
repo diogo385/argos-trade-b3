@@ -343,6 +343,10 @@ def main(agora=None):
     v_refs = {r: est["refs"][r] * px[r] for r in REFS}
     est["pico"] = max(est.get("pico", v), v)
     est["px_refs"] = {r: px[r] for r in REFS}
+    est["precos"] = {a: round(px[a], 4) for a in ATIVOS + REFS}   # usados pelo monitor web
+    est["grupos"] = {"valorizacao": VALORIZACAO, "dividendos": DIVIDENDOS, "fiis": FIIS}
+    est["capital"], est["reserva"] = CAPITAL, RESERVA
+    est["ultima_execucao"] = agora.isoformat(timespec="minutes")
 
     # registros
     if not OPERACOES.exists():

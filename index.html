@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Argos Trade B3 · Monitor</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+/* Monitor do Argos Trade B3: tema claro, lê os arquivos do robô simulado (simulado/*). */
+:root {
+  color-scheme: light;
+  --bg: #f4f7fb; --surface: #ffffff; --surface-2: #f8fafd; --line: #e2e8f1; --line-2: #cfd8e5;
+  --ink: #0c1c3f; --ink-2: #33405c; --muted: #5d6880; --dim: #8b95a8;
+  --brand: #1a62d6; --brand-soft: #e8f0fd; --cyan: #10b5d8;
+  --pos: #16803a; --pos-soft: #e6f4ea; --neg: #c42b2b; --neg-soft: #fbeaea; --warn: #a15c00; --warn-soft: #fdf1df;
+  --s1: #257de0; --s2: #f47230; --s3: #00b894; --s4: #f2a600; --s5: #ee7fac;
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(12, 28, 63, .05), 0 4px 16px rgba(12, 28, 63, .05);
+  --font: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased; }
+.num { font-variant-numeric: tabular-nums; }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 20px 16px 48px; }
+a { color: var(--brand); text-decoration: none; } a:hover { text-decoration: underline; }
+
+/* topo */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand img { height: 64px; width: auto; display: block; }
+.brand .t1 { font-weight: 800; font-size: 22px; letter-spacing: .06em; line-height: 1.1; }
+.brand .t1 b { color: var(--brand); }
+.brand .t2 { color: var(--muted); font-size: 13px; }
+.status { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); white-space: nowrap; }
+.pill.sim { background: var(--warn-soft); border-color: #f3d6a8; color: var(--warn); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+.dot.ok { background: var(--pos); box-shadow: 0 0 0 3px var(--pos-soft); }
+.dot.late { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-soft); }
+
+/* cartões */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; min-width: 0; }
+.card h2 { font-size: 15px; margin: 0 0 2px; font-weight: 700; }
+.card .sub { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; }
+.grid { display: grid; gap: 14px; }
+.kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 14px; }
+.kpi { padding: 14px 16px; }
+.kpi .lab { color: var(--muted); font-size: 12px; font-weight: 600; }
+.kpi .v { font-size: 22px; font-weight: 800; margin-top: 4px; line-height: 1.15; letter-spacing: -.01em; }
+.kpi .s { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.pos { color: var(--pos); } .neg { color: var(--neg); }
+.two { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); margin-bottom: 14px; }
+.full { margin-bottom: 14px; }
+
+/* gráfico */
+.chart-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--surface-2); }
+.seg button { font: inherit; font-size: 12px; font-weight: 600; border: 0; background: transparent; color: var(--muted); padding: 5px 11px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 4px 0 8px; }
+.legend button { font: inherit; font-size: 12.5px; color: var(--ink-2); background: none; border: 0; padding: 2px 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.legend button[aria-pressed="false"] { opacity: .4; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.chart { position: relative; }
+.chart svg { width: 100%; height: 300px; display: block; overflow: visible; }
+.chart .ax { fill: var(--dim); font-size: 11px; }
+.chart .grid-l { stroke: var(--line); stroke-width: 1; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 10px;
+  box-shadow: 0 6px 20px rgba(12, 28, 63, .12); font-size: 12px; min-width: 190px; display: none; z-index: 2; }
+.tip .d { font-weight: 700; margin-bottom: 4px; }
+.tip .r { display: flex; justify-content: space-between; gap: 12px; }
+.tip .r span:first-child { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+.tip i { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
+.linkbtn { font: inherit; font-size: 12px; color: var(--brand); background: none; border: 0; padding: 0; cursor: pointer; font-weight: 600; }
+
+/* tabelas */
+.tbl-wrap { overflow-x: auto; margin: 0 -4px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em;
+  padding: 8px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td { padding: 9px 7px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; }
+td.motivo { white-space: normal; min-width: 240px; color: var(--ink-2); }
+.tk { font-weight: 700; }
+.grp td { background: var(--surface-2); font-weight: 700; color: var(--ink-2); font-size: 12px; padding: 7px 8px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.chip.buy { background: var(--pos-soft); color: var(--pos); }
+.chip.sell { background: var(--neg-soft); color: var(--neg); }
+.chip.info { background: var(--brand-soft); color: var(--brand); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.ok { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.wbar { position: relative; width: 64px; height: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+.wbar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--brand); }
+.wbar em { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); border-radius: 1px; }
+
+/* blocos */
+.blocks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.blk { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; background: var(--surface-2); }
+.blk .lab { font-size: 12px; color: var(--muted); font-weight: 600; }
+.blk .v { font-weight: 800; font-size: 17px; }
+.blk .s { font-size: 12px; color: var(--muted); }
+
+/* gatilhos */
+.trig { list-style: none; margin: 0; padding: 0; }
+.trig li { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.trig li:last-child { border-bottom: 0; }
+.trig .bar { height: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; position: relative; overflow: hidden; }
+.trig .bar span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--cyan); }
+.trig .txt { font-size: 12px; color: var(--muted); }
+.trig .val { font-size: 12.5px; font-weight: 700; text-align: right; }
+.trig-h { font-size: 12px; font-weight: 700; color: var(--ink-2); margin: 12px 0 2px; text-transform: uppercase; letter-spacing: .04em; }
+.trig-h:first-child { margin-top: 0; }
+
+/* proventos */
+.bars svg { width: 100%; height: 150px; display: block; }
+.bars .ax { fill: var(--dim); font-size: 10.5px; }
+
+/* regras */
+.rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.rule { border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; }
+.rule b { display: block; margin-bottom: 2px; }
+.rule p { margin: 0; color: var(--muted); font-size: 12.5px; }
+
+.empty { padding: 26px; text-align: center; color: var(--muted); border: 1px dashed var(--line-2); border-radius: 12px; background: var(--surface-2); }
+.banner { background: var(--brand-soft); border: 1px solid #c9dcfa; color: var(--ink-2); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 13px; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+footer { color: var(--muted); font-size: 12px; margin-top: 24px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+@media (max-width: 1080px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr); } .rules { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kpi .v { font-size: 19px; }
+  .blocks { grid-template-columns: minmax(0, 1fr); } .brand img { height: 52px; } .brand .t1 { font-size: 18px; }
+  .chart svg { height: 240px; } .card { padding: 14px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <img src="assets/simbolo-argos-b3.png" alt="Símbolo Argos Trade B3" width="64" height="64">
+      <div>
+        <div class="t1">ARGOS TRADE <b>B3</b></div>
+        <div class="t2">Monitor do robô · ações, dividendos e FIIs</div>
+      </div>
+    </div>
+    <div class="status">
+      <span class="pill sim">🧪 SIMULADO · dinheiro de mentira</span>
+      <span class="pill"><i class="dot" id="runDot"></i><span id="runTxt">carregando…</span></span>
+      <span class="pill" id="nextTxt">Próxima execução: --</span>
+    </div>
+  </header>
+
+  <div id="app"><div class="empty">Carregando os dados do robô…</div></div>
+
+  <footer>
+    <span>Regras: <a href="https://github.com/diogo385/argos-trade-b3/blob/main/backtest/ROBO_REGRAS.md">V3 do backtest</a> ·
+      Carteira: <a href="https://github.com/diogo385/argos-trade-b3/blob/main/ANALISE.md">análise de 25/11/2026</a></span>
+    <span>Atualiza sozinho a cada 5 minutos · dados do Yahoo Finance e do Banco Central</span>
+  </footer>
+</div>
+
+<script>
+"use strict";
+const SERIES = [
+  { k: "patrimonio", n: "Robô", c: "var(--s1)", w: 2.6 },
+  { k: "carteira_parada", n: "Carteira parada", c: "var(--s2)", w: 2 },
+  { k: "cdi", n: "CDI líquido", c: "var(--s3)", w: 2 },
+  { k: "ibovespa", n: "Ibovespa", c: "var(--s4)", w: 2 },
+  { k: "ifix", n: "IFIX", c: "var(--s5)", w: 2 },
+];
+const NOMES = { valorizacao: "Valorização", dividendos: "Dividendos", fiis: "FIIs" };
+const REFORCO_1 = 0.85, REFORCO_2 = 0.75, TETO = 2, CORTE = { dividendos: 0.30, fiis: 0.25 };
+let D = null, vis = Object.fromEntries(SERIES.map(s => [s.k, true])), faixa = "tudo", tabela = false, filtroOp = "todas";
+
+// ---------- utilidades
+const brl = (v, c = 2) => "R$ " + Number(v).toLocaleString("pt-BR", { minimumFractionDigits: c, maximumFractionDigits: c });
+const pct = (v, c = 1) => (v >= 0 ? "+" : "−") + Math.abs(v * 100).toLocaleString("pt-BR", { minimumFractionDigits: c, maximumFractionDigits: c }) + "%";
+const sinal = v => v > 0.00001 ? "pos" : v < -0.00001 ? "neg" : "";
+const dataBR = s => s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : "--";
+const curta = s => `${s.slice(8, 10)}/${s.slice(5, 7)}`;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const el = id => document.getElementById(id);
+
+function csv(texto) {
+  const linhas = [], cab = [];
+  let campo = "", linha = [], aspas = false;
+  for (let i = 0; i < texto.length; i++) {
+    const ch = texto[i];
+    if (aspas) {
+      if (ch === '"' && texto[i + 1] === '"') { campo += '"'; i++; }
+      else if (ch === '"') aspas = false;
+      else campo += ch;
+    } else if (ch === '"') aspas = true;
+    else if (ch === ";") { linha.push(campo); campo = ""; }
+    else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && texto[i + 1] === "\n") i++;
+      linha.push(campo); campo = "";
+      if (linha.some(x => x !== "")) linhas.push(linha);
+      linha = [];
+    } else campo += ch;
+  }
+  if (campo || linha.length) { linha.push(campo); linhas.push(linha); }
+  if (!linhas.length) return [];
+  const h = linhas.shift();
+  return linhas.map(l => Object.fromEntries(h.map((k, i) => [k, l[i]])));
+}
+
+async function arquivo(nome, json) {
+  const r = await fetch(`simulado/${nome}?t=${Date.now()}`, { cache: "no-store" });
+  if (!r.ok) return null;
+  return json ? r.json() : csv(await r.text());
+}
+
+// ---------- carga
+async function carregar() {
+  try {
+    const [est, hist, ops, prov] = await Promise.all([
+      arquivo("estado.json", true), arquivo("historico.csv"), arquivo("operacoes.csv"), arquivo("proventos.csv")]);
+    if (!est) { vazio(); return; }
+    D = { est, hist: (hist || []).map(h => ({ ...h, ...Object.fromEntries(SERIES.map(s => [s.k, +h[s.k]])), caixa: +h.caixa })),
+          ops: ops || [], prov: prov || [] };
+    desenhar();
+  } catch (e) {
+    el("app").innerHTML = `<div class="empty">Não consegui ler os dados do robô agora (${esc(e.message)}). Tento de novo em 5 minutos.</div>`;
+  }
+  status();
+}
+
+function vazio() {
+  el("app").innerHTML = `<div class="empty"><b>O robô ainda não rodou.</b><br>A carteira simulada de R$ 6.000 é montada no primeiro
+    fechamento de dia útil, às 18h30 (Brasília). Depois disso, este monitor mostra tudo aqui.</div>`;
+  el("runTxt").textContent = "aguardando o 1º fechamento"; status();
+}
+
+function proximaExecucao() {
+  const agora = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const d = new Date(agora);
+  d.setHours(18, 30, 0, 0);
+  if (agora >= d) d.setDate(d.getDate() + 1);
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+  const hoje = d.toDateString() === agora.toDateString();
+  const dias = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+  return hoje ? "hoje, 18h30" : `${dias[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}, 18h30`;
+}
+
+function status() {
+  el("nextTxt").textContent = "Próxima execução: " + proximaExecucao();
+  if (!D) return;
+  const ult = D.est.ultima_execucao ? new Date(D.est.ultima_execucao) : null;
+  const horas = ult ? (Date.now() - ult) / 36e5 : 99;
+  el("runDot").className = "dot " + (horas < 80 ? "ok" : "late");
+  el("runTxt").textContent = `Último fechamento: ${dataBR(D.est.ultimo_pregao)}` + (horas >= 80 ? " · atrasado" : "");
+}
+
+// ---------- cálculos
+function posicoes() {
+  const e = D.est, c = e.carteira, px = e.precos || {};
+  const total = c.caixa + Object.entries(c.qtd).reduce((s, [a, q]) => s + q * (px[a] || 0), 0);
+  const alvo = total * (1 - e.reserva / e.capital) / 20;
+  const lin = [];
+  for (const [g, lista] of Object.entries(e.grupos)) for (const a of lista) {
+    const q = c.qtd[a] || 0, p = px[a], v = q * p, pm = c.pm[a];
+    lin.push({ g, a, q, p, v, pm, peso: v / total, rel: v / alvo, res: pm ? p / pm - 1 : null,
+               fora: e.fora?.[a], ref: e.reforcos?.[a] || 0, alerta: e.alertado?.[a], saude: e.saude_proventos?.[a] });
+  }
+  return { total, alvo, lin };
+}
+
+function statusAtivo(x) {
+  if (x.fora) return `<span class="chip sell">Fora</span>`;
+  if (x.alerta) return `<span class="chip warn">⚠ −35% topo</span>`;
+  if (x.rel > TETO * 0.9) return `<span class="chip info">Perto do teto</span>`;
+  if (x.ref) return `<span class="chip buy">Reforço ${x.ref}×</span>`;
+  if (x.pm && x.p <= x.pm * (REFORCO_1 + 0.04)) return `<span class="chip warn">Perto reforço</span>`;
+  return `<span class="chip ok">Normal</span>`;
+}
+
+// ---------- desenho
+function desenhar() {
+  const e = D.est, c = e.carteira, { total, alvo, lin } = posicoes();
+  const h = D.hist, ult = h[h.length - 1] || {};
+  const ini = e.capital;
+  const provTotal = D.prov.reduce((s, p) => s + +p.total, 0);
+  const vsCdi = ult.cdi ? total - ult.cdi : 0, vsPar = ult.carteira_parada ? total - ult.carteira_parada : 0;
+  const reservaAlvo = total * e.reserva / e.capital;
+  const nOps = D.ops.filter(o => o.motivo !== "montagem inicial").length;
+
+  const blocos = Object.keys(e.grupos).map(g => {
+    const ls = lin.filter(x => x.g === g), v = ls.reduce((s, x) => s + x.v, 0);
+    const custo = ls.reduce((s, x) => s + (x.pm ? x.q * x.pm : 0), 0);
+    return { g, v, peso: v / total, res: custo ? v / custo - 1 : 0, n: ls.filter(x => x.q).length, tot: ls.length };
+  });
+
+  el("app").innerHTML = `
+  ${e.inicio === e.ultimo_pregao ? `<div class="banner">Carteira montada hoje (${dataBR(e.inicio)}). Os gráficos ganham forma a partir dos próximos fechamentos.</div>` : ""}
+  <section class="grid kpis">
+    ${kpi("Patrimônio", brl(total), `início ${brl(ini, 0)} em ${dataBR(e.inicio)}`)}
+    ${kpi("Resultado", `<span class="${sinal(total - ini)}">${pct(total / ini - 1)}</span>`, `<span class="${sinal(total - ini)}">${(total >= ini ? "+" : "−") + brl(Math.abs(total - ini))}</span>`)}
+    ${kpi("Contra o CDI", `<span class="${sinal(vsCdi)}">${(vsCdi >= 0 ? "+" : "−") + brl(Math.abs(vsCdi))}</span>`, `CDI líquido: ${brl(ult.cdi || ini)}`)}
+    ${kpi("Contra a carteira parada", `<span class="${sinal(vsPar)}">${(vsPar >= 0 ? "+" : "−") + brl(Math.abs(vsPar))}</span>`, `${nOps} ${nOps === 1 ? "operação" : "operações"} do robô`)}
+    ${kpi("Proventos recebidos", brl(provTotal), `${D.prov.length} pagamentos · IR pago ${brl(c.ir_pago)}`)}
+    ${kpi("Reserva em caixa", brl(c.caixa), `alvo de ${brl(reservaAlvo, 0)} · rende CDI`)}
+  </section>
+
+  <section class="card full">
+    <div class="chart-head">
+      <div><h2>Patrimônio contra as referências</h2><p class="sub">Todas começam com ${brl(ini, 0)} no mesmo dia. Valores no fechamento de cada pregão.</p></div>
+      <div class="seg" role="group" aria-label="Período">
+        ${["1m", "3m", "tudo"].map(f => `<button type="button" data-f="${f}" aria-pressed="${faixa === f}">${f === "tudo" ? "Tudo" : f.toUpperCase()}</button>`).join("")}
+      </div>
+    </div>
+    <div class="legend" id="legend">${SERIES.map(s => `<button type="button" data-k="${s.k}" aria-pressed="${vis[s.k]}"><i style="background:${s.c}"></i>${s.n}</button>`).join("")}</div>
+    <div class="chart" id="chart"></div>
+    <button type="button" class="linkbtn" id="tblBtn">${tabela ? "Esconder tabela" : "Ver em tabela"}</button>
+    <div id="tblHist"></div>
+  </section>
+
+  <section class="grid two">
+    <div class="card">
+      <h2>Carteira</h2><p class="sub">Alvo por ativo: ${brl(alvo)} (cerca de 4,2% do patrimônio; o resto é a reserva). A barra mostra o peso; o traço é o alvo.</p>
+      <div class="blocks">${blocos.map(b => `<div class="blk"><div class="lab">${NOMES[b.g]} · ${b.n}/${b.tot} ativos</div>
+        <div class="v num">${brl(b.v, 0)}</div><div class="s num">${pct(b.peso, 0).replace("+", "")} da carteira · <span class="${sinal(b.res)}">${pct(b.res)}</span></div></div>`).join("")}</div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Ativo</th><th class="r">Qtd</th><th class="r">P. médio</th><th class="r">Preço</th><th class="r">Valor</th><th>Peso</th><th class="r">Resultado</th><th>Situação</th></tr></thead>
+        <tbody>${Object.keys(e.grupos).map(g => `<tr class="grp"><td colspan="8">${NOMES[g]}</td></tr>` +
+          lin.filter(x => x.g === g).map(x => `<tr>
+            <td class="tk">${x.a}</td><td class="r num">${x.q}</td><td class="r num">${x.pm ? brl(x.pm) : "—"}</td>
+            <td class="r num">${x.p ? brl(x.p) : "—"}</td><td class="r num">${brl(x.v)}</td>
+            <td class="num"><span class="wbar" title="peso ${pct(x.peso).replace("+", "")} · alvo ${pct(alvo / total).replace("+", "")}"><span style="width:${Math.min(100, x.rel * 40)}%"></span><em style="left:40%"></em></span>${pct(x.peso).replace("+", "")}</td>
+            <td class="r num ${x.res == null ? "" : sinal(x.res)}">${x.res == null ? "—" : pct(x.res)}</td><td>${statusAtivo(x)}</td></tr>`).join("")).join("")}
+          <tr class="grp"><td colspan="4">Reserva (CDI)</td><td class="r num">${brl(c.caixa)}</td><td class="num" colspan="3">${pct(c.caixa / total).replace("+", "")}</td></tr>
+        </tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>Gatilhos do robô</h2><p class="sub">O que está mais perto de fazer o robô agir no próximo fechamento.</p>
+      ${gatilhos(lin)}
+    </div>
+  </section>
+
+  <section class="grid two">
+    <div class="card">
+      <h2>Diário de operações</h2><p class="sub">Cada decisão do robô com o motivo. Montagem inicial incluída.</p>
+      <div class="filters"><div class="seg" role="group" aria-label="Filtrar operações">
+        ${[["todas", "Todas"], ["COMPRA", "Compras"], ["VENDA", "Vendas"]].map(([k, n]) => `<button type="button" data-op="${k}" aria-pressed="${filtroOp === k}">${n}</button>`).join("")}
+      </div><span class="sub" style="margin:0">${D.ops.length} registros</span></div>
+      <div class="tbl-wrap" style="max-height:420px;overflow:auto">${diario()}</div>
+    </div>
+    <div class="card">
+      <h2>Proventos por mês</h2><p class="sub">Dividendos, JCP e rendimentos de FIIs creditados na carteira do robô.</p>
+      <div class="bars" id="bars"></div>
+      <div class="tbl-wrap" style="max-height:220px;overflow:auto;margin-top:8px">${provLista()}</div>
+    </div>
+  </section>
+
+  <section class="card full">
+    <h2>Regras em vigor</h2><p class="sub">Versão V3 do backtest. O robô decide sozinho; nenhuma regra é afrouxada por ele.</p>
+    <div class="rules">
+      <div class="rule"><b>🟢 Reforço nas quedas</b><p>Ativo 15% abaixo do preço médio → compra mais ~R$ 250 com a reserva. Segundo reforço com mais ~12% de queda. Até 2 por mês, nenhum ativo acima de 2× o alvo e só com proventos em dia.</p></div>
+      <div class="rule"><b>🔵 Realização de lucro</b><p>Posição acima de 2× o alvo volta para o alvo. No primeiro pregão de cada trimestre, o robô rebalanceia tudo (FIIs só recebem compras).</p></div>
+      <div class="rule"><b>🔴 Saída por tese</b><p>Ação de dividendos com proventos −30% em 12 meses, ou FII com −25%: vende tudo e volta quando os proventos se recuperam. Queda de 35% do topo só gera alerta.</p></div>
+    </div>
+  </section>`;
+
+  grafico(); barras();
+  document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { faixa = b.dataset.f; desenhar(); });
+  document.querySelectorAll("[data-k]").forEach(b => b.onclick = () => { vis[b.dataset.k] = !vis[b.dataset.k]; desenhar(); });
+  document.querySelectorAll("[data-op]").forEach(b => b.onclick = () => { filtroOp = b.dataset.op; desenhar(); });
+  el("tblBtn").onclick = () => { tabela = !tabela; desenhar(); };
+  status();
+}
+
+const kpi = (lab, v, s) => `<div class="card kpi"><div class="lab">${lab}</div><div class="v num">${v}</div><div class="s num">${s}</div></div>`;
+
+function gatilhos(lin) {
+  const ativos = lin.filter(x => x.q && x.pm && !x.fora);
+  const reforco = ativos.map(x => {
+    const gat = x.ref === 0 ? REFORCO_1 : x.ref === 1 ? REFORCO_2 : null;
+    return gat ? { ...x, falta: x.p / (x.pm * (x.ref === 0 ? REFORCO_1 : REFORCO_2 / REFORCO_1 * 1)) - 1 } : null;
+  }).filter(Boolean).sort((a, b) => a.falta - b.falta).slice(0, 5);
+  const lucro = ativos.slice().sort((a, b) => b.rel - a.rel).slice(0, 4);
+  const saude = lin.filter(x => x.g !== "valorizacao").filter(x => x.saude != null).sort((a, b) => a.saude - b.saude).slice(0, 5);
+  const item = (tk, prog, txt, val) => `<li><span class="tk">${tk}</span><div><div class="bar"><span style="width:${Math.max(2, Math.min(100, prog * 100))}%"></span></div><div class="txt">${txt}</div></div><span class="val num">${val}</span></li>`;
+  return `
+    <div class="trig-h">Reforço (queda até o gatilho)</div>
+    <ul class="trig">${reforco.length ? reforco.map(x => item(x.a, 1 - Math.max(0, x.falta) / 0.2,
+      `${x.ref ? "2º" : "1º"} reforço se cair a ${brl(x.pm * (x.ref ? REFORCO_2 / REFORCO_1 : REFORCO_1))}`,
+      x.falta <= 0 ? "no gatilho" : "faltam " + pct(-x.falta).replace("−", ""))).join("") : `<li><span></span><span class="txt">Nenhum ativo elegível.</span><span></span></li>`}</ul>
+    <div class="trig-h">Realização de lucro (peso ÷ alvo)</div>
+    <ul class="trig">${lucro.map(x => item(x.a, x.rel / TETO, `vende o excesso quando chegar a 2× o alvo`, x.rel.toFixed(2).replace(".", ",") + "×")).join("")}</ul>
+    <div class="trig-h">Saúde dos proventos (12 meses vs anteriores)</div>
+    <ul class="trig">${saude.length ? saude.map(x => item(x.a, Math.max(0, Math.min(1, (x.saude + CORTE[x.g]) / (CORTE[x.g] * 2))),
+      `sai se cair mais de ${CORTE[x.g] * 100}%`, `<span class="${sinal(x.saude)}">${pct(x.saude, 0)}</span>`)).join("") : `<li><span></span><span class="txt">Sem histórico suficiente ainda.</span><span></span></li>`}</ul>`;
+}
+
+function diario() {
+  const ops = D.ops.filter(o => filtroOp === "todas" || o.tipo === filtroOp).slice().reverse();
+  if (!ops.length) return `<div class="empty">Nenhuma operação ${filtroOp === "todas" ? "" : "deste tipo "}ainda.</div>`;
+  return `<table><thead><tr><th>Data</th><th>Tipo</th><th>Ativo</th><th class="r">Qtd</th><th class="r">Valor</th><th>Motivo</th></tr></thead><tbody>
+    ${ops.map(o => `<tr><td class="num">${dataBR(o.data)}</td><td><span class="chip ${o.tipo === "COMPRA" ? "buy" : "sell"}">${o.tipo === "COMPRA" ? "Compra" : "Venda"}</span></td>
+      <td class="tk">${esc(o.ativo)}</td><td class="r num">${esc(o.quantidade)}</td><td class="r num">${brl(+o.valor)}</td><td class="motivo">${esc(o.motivo)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+function provLista() {
+  if (!D.prov.length) return `<div class="empty">Nenhum provento recebido ainda. O primeiro aparece no fechamento da data-com.</div>`;
+  return `<table><thead><tr><th>Data-com</th><th>Ativo</th><th class="r">Por cota</th><th class="r">Total</th></tr></thead><tbody>
+    ${D.prov.slice().reverse().map(p => `<tr><td class="num">${dataBR(p.data_com)}</td><td class="tk">${esc(p.ativo)}</td>
+      <td class="r num">${brl(+p.valor_por_cota, 4)}</td><td class="r num">${brl(+p.total)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+// ---------- gráfico de linhas com cruz e dica
+function grafico() {
+  const box = el("chart");
+  let h = D.hist;
+  if (faixa !== "tudo" && h.length) {
+    const fim = new Date(h[h.length - 1].data), ini = new Date(fim);
+    ini.setMonth(ini.getMonth() - (faixa === "1m" ? 1 : 3));
+    h = h.filter(x => new Date(x.data) >= ini);
+  }
+  if (h.length < 2) {
+    box.innerHTML = `<div class="empty">O gráfico aparece a partir do segundo fechamento.${h.length ? ` Hoje: robô ${brl(h[0].patrimonio)}.` : ""}</div>`;
+    el("tblHist").innerHTML = ""; return;
+  }
+  const ss = SERIES.filter(s => vis[s.k]);
+  const W = box.clientWidth || 800, H = window.innerWidth <= 560 ? 240 : 300, m = { l: 62, r: W < 560 ? 12 : 96, t: 10, b: 26 };
+  const vals = h.flatMap(x => ss.map(s => x[s.k])).filter(v => isFinite(v) && v > 0);
+  if (!vals.length) { box.innerHTML = `<div class="empty">Escolha ao menos uma série na legenda.</div>`; return; }
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.08 || hi * 0.01; lo -= pad; hi += pad;
+  const X = i => m.l + i * (W - m.l - m.r) / (h.length - 1), Y = v => m.t + (hi - v) * (H - m.t - m.b) / (hi - lo);
+  const ticks = 4, ty = Array.from({ length: ticks + 1 }, (_, i) => lo + (hi - lo) * i / ticks);
+  const nx = Math.min(6, h.length), tx = Array.from({ length: nx }, (_, i) => Math.round(i * (h.length - 1) / (nx - 1)));
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Patrimônio do robô e das referências ao longo do tempo">`;
+  svg += ty.map(v => `<line class="grid-l" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="ax num" x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${brl(v, 0).replace("R$ ", "")}</text>`).join("");
+  svg += tx.map(i => `<text class="ax num" x="${X(i)}" y="${H - 6}" text-anchor="middle">${curta(h[i].data)}</text>`).join("");
+  svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(D.est.capital)}" y2="${Y(D.est.capital)}" stroke="var(--line-2)" stroke-dasharray="3 4"/>`;
+  // desenha o robô por último, por cima
+  const ordem = ss.slice().sort((a, b) => (a.k === "patrimonio") - (b.k === "patrimonio"));
+  for (const s of ordem) {
+    const d = h.map((x, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(x[s.k]).toFixed(1)}`).join("");
+    svg += `<path d="${d}" fill="none" stroke="${s.c}" stroke-width="${s.w}" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  // rótulos diretos no fim da linha, sem sobreposição
+  if (W >= 560) {
+    const ends = ss.map(s => ({ s, y: Y(h[h.length - 1][s.k]) })).sort((a, b) => a.y - b.y);
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+    svg += ends.map(e => `<circle cx="${X(h.length - 1)}" cy="${Y(h[h.length - 1][e.s.k])}" r="4" fill="${e.s.c}" stroke="var(--surface)" stroke-width="2"/>
+      <text x="${X(h.length - 1) + 10}" y="${e.y + 4}" font-size="11.5" fill="var(--ink-2)" font-weight="${e.s.k === "patrimonio" ? 700 : 500}">${e.s.n}</text>`).join("");
+  }
+  svg += `<line id="cross" y1="${m.t}" y2="${H - m.b}" stroke="var(--dim)" stroke-width="1" visibility="hidden"/>`;
+  svg += `<g id="hdots"></g><rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent" id="hit"/></svg><div class="tip" id="tip"></div>`;
+  box.innerHTML = svg;
+  const hit = el("hit"), tip = el("tip"), cross = el("cross"), dots = el("hdots");
+  const mover = ev => {
+    const r = box.querySelector("svg").getBoundingClientRect(), sx = W / r.width;
+    const px = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) * sx;
+    const i = Math.max(0, Math.min(h.length - 1, Math.round((px - m.l) / ((W - m.l - m.r) / (h.length - 1)))));
+    const x = h[i];
+    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("visibility", "visible");
+    dots.innerHTML = ss.map(s => `<circle cx="${X(i)}" cy="${Y(x[s.k])}" r="4.5" fill="${s.c}" stroke="var(--surface)" stroke-width="2"/>`).join("");
+    tip.innerHTML = `<div class="d">${dataBR(x.data)}</div>` + ss.slice().sort((a, b) => x[b.k] - x[a.k]).map(s =>
+      `<div class="r"><span><i style="background:${s.c}"></i>${s.n}</span><b class="num">${brl(x[s.k])}</b></div>`).join("");
+    tip.style.display = "block";
+    const left = X(i) / sx, w = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(r.width - w, left + (left > r.width / 2 ? -w - 14 : 14))) + "px";
+    tip.style.top = "10px";
+  };
+  const sair = () => { tip.style.display = "none"; cross.setAttribute("visibility", "hidden"); dots.innerHTML = ""; };
+  hit.addEventListener("mousemove", mover); hit.addEventListener("touchmove", mover, { passive: true });
+  hit.addEventListener("mouseleave", sair); hit.addEventListener("touchend", sair);
+  el("tblHist").innerHTML = tabela ? `<div class="tbl-wrap" style="max-height:260px;overflow:auto;margin-top:10px"><table><thead><tr><th>Data</th>${SERIES.map(s => `<th class="r">${s.n}</th>`).join("")}</tr></thead><tbody>
+    ${h.slice().reverse().map(x => `<tr><td class="num">${dataBR(x.data)}</td>${SERIES.map(s => `<td class="r num">${brl(x[s.k])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : "";
+}
+
+// ---------- barras de proventos por mês (série única)
+function barras() {
+  const box = el("bars");
+  const porMes = {};
+  for (const p of D.prov) { const k = p.data_com.slice(0, 7); porMes[k] = (porMes[k] || 0) + +p.total; }
+  const ini = D.est.inicio.slice(0, 7), fim = D.est.ultimo_pregao.slice(0, 7), meses = [];
+  for (let d = new Date(ini + "-01T12:00"); d.toISOString().slice(0, 7) <= fim; d.setMonth(d.getMonth() + 1)) meses.push(d.toISOString().slice(0, 7));
+  const ult = meses.slice(-12);
+  if (!D.prov.length) { box.innerHTML = ""; return; }
+  const W = box.clientWidth || 400, H = 150, m = { l: 8, r: 8, t: 18, b: 22 };
+  const mx = Math.max(...ult.map(k => porMes[k] || 0), 1), bw = (W - m.l - m.r) / ult.length;
+  const nomes = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Proventos recebidos por mês">
+    <line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--line-2)"/>
+    ${ult.map((k, i) => { const v = porMes[k] || 0, bh = v / mx * (H - m.t - m.b), x = m.l + i * bw + bw * 0.18, w = bw * 0.64;
+      return `<g><title>${nomes[+k.slice(5) - 1]}/${k.slice(2, 4)}: ${brl(v)}</title>
+        ${v ? `<path d="M${x},${H - m.b} V${H - m.b - bh + 4} q0,-4 4,-4 H${x + w - 4} q4,0 4,4 V${H - m.b} Z" fill="var(--s1)"/>` : ""}
+        ${v ? `<text x="${x + w / 2}" y="${H - m.b - bh - 5}" text-anchor="middle" font-size="10.5" fill="var(--ink-2)" class="num">${Math.round(v)}</text>` : ""}
+        <text class="ax" x="${x + w / 2}" y="${H - 6}" text-anchor="middle">${nomes[+k.slice(5) - 1]}</text></g>`; }).join("")}
+  </svg>`;
+}
+
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => D && desenhar(), 150); });
+carregar();
+setInterval(carregar, 5 * 60 * 1000);
+setInterval(status, 60 * 1000);
+</script>
+</body>
+</html>
