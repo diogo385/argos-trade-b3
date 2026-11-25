@@ -1,0 +1,26 @@
+name: Argos Trade B3 · sinal de vida
+
+on:
+  schedule:
+    - cron: "30 23 * * 1-5"   # 20h30 de Brasília, dias úteis: 2 horas depois do robô
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  conferir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Conferir se o robô rodou hoje
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python simulado/sinal_de_vida.py
