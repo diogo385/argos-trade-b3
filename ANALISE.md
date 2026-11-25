@@ -174,7 +174,7 @@ Feita com `analise-acao-b3` nos 20 ativos e `cenario-macro-br`. Todos os número
 | Dividendos | CXSE3 | PETR4 (lucro oscila, parte em JCP), TAEE11 (dívida em 4,7x o EBITDA; liquidez de R$ 98 mi/dia), CPLE3 (JCP maior que dividendos em 2026; dívida +27%), VIVT3 (remuneração quase toda em JCP e redução de capital) | — |
 | FIIs | KNCR11, BTLG11, MCCI11 | KNRI11 (distribui R$ 1,10 com resultado de R$ 0,94 por cota) | **XPML11**, se o corte do rendimento se confirmar (R$ 0,92 → R$ 0,80 em novembro, o menor em 43 meses; P/VP perto de 1) |
 
-**Trocas em aberto (dependem do OK do usuário):** XPML11 → VISC11 (rendimento de R$ 0,82 a R$ 0,84, resultado acima do distribuído; falta confirmar P/VP e vacância). AXIA3 é a primeira candidata na revisão de março; reserva natural: ENEV3, ainda sem pesquisa de fundamentos.
+**Troca feita em 25/11/2026, antes da montagem da carteira, com o OK do usuário:** XPML11 → VISC11. Sobre o VISC11: (rendimento de R$ 0,82 a R$ 0,84, resultado acima do distribuído; falta confirmar P/VP e vacância). AXIA3 é a primeira candidata na revisão de março; reserva natural: ENEV3, ainda sem pesquisa de fundamentos.
 
 ### Correções ao texto original
 

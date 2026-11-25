@@ -26,7 +26,7 @@ Traduza para a carteira do robô (`simulado/robo_b3.py`, `ANALISE.md`):
 - **Régua do CDI**: CDI anual aproximado e líquido de IR (15%); é o mínimo que a carteira precisa vencer.
 - **Valorização**: setores da carteira mais expostos ao cenário (juros altos pesam em construção e varejo; dólar forte ajuda exportadoras como EMBJ3, SUZB3, GGBR4).
 - **Dividendos**: atratividade do DY contra o CDI líquido; riscos de corte.
-- **FIIs**: papel CDI (KNCR11) ganha com Selic alta; tijolo (BTLG11, KNRI11, XPML11) tende a reagir quando os juros caem; P/VP médio do IFIX.
+- **FIIs**: papel CDI (KNCR11) ganha com Selic alta; tijolo (BTLG11, KNRI11, VISC11) tende a reagir quando os juros caem; P/VP médio do IFIX.
 - Fatos que podem acionar regras do robô (corte de proventos, quedas fortes).
 
 ## Resposta

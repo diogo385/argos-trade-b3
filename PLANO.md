@@ -181,3 +181,5 @@ Comandos pelo Telegram (`/status`, `/pausar`) ficam para a fase real: exigem um 
 **Teste com dados de 2022 a 2026** (`backtest/ROBO_REGRAS.md`): V3 original R$ 14.449; V3b (proventos, teto e piso) R$ 14.390; V5 (V3b + realização com lucro mínimo + saída de valorização) R$ 13.918. A regra de venda de metade **não disparou nenhuma vez** nesse período, porque os ativos foram escolhidos sabendo que sobreviveram; o custo veio de não reforçar ações em observação. Ela entra como seguro, não como fonte de retorno. A variação "realização só com 25% de lucro" piorou o teste e **não foi adotada**.
 
 **Limites conhecidos:** proventos entram pelo valor bruto (o JCP tem 17,5% de IR na fonte); a "realização em 2x o alvo" quase nunca dispara, porque o rebalanceamento trimestral age antes.
+
+**Carteira em vigor desde a montagem (25/11/2026):** nos FIIs, **VISC11** entrou no lugar do XPML11, que cortou o rendimento de R$ 0,92 para R$ 0,80 em novembro e estava com P/VP perto de 1 (`ANALISE.md`, seção 9). A troca foi feita antes da primeira compra, então não houve venda nem imposto.
