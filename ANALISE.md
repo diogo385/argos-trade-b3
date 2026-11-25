@@ -159,3 +159,35 @@ Critérios:
 - O histórico de dividendos de FIIs no Yahoo é incompleto (a coluna "DY médio 5a" está subestimada), e o preço do XPML11 tem erro na base.
 - As ações foram escolhidas hoje, o que gera viés de sobrevivência nos testes históricos.
 - Cenário de 25/11/2026: muda com Copom, quadro fiscal e resultados do 4T26.
+
+---
+
+## 9. Revisão pelas skills do projeto · 25/11/2026 (fim do dia)
+
+Feita com `analise-acao-b3` nos 20 ativos e `cenario-macro-br`. Todos os números vêm de resumos de busca (a rede bloqueou os sites oficiais): **não conferidos na fonte**. Onde esta seção contradiz as seções 1 a 6, vale esta.
+
+### Vereditos
+
+| Bloco | Passa | Passa com ressalvas | Não passa |
+|---|---|---|---|
+| Valorização | BPAC11, ITUB4, PRIO3, GGBR4, FLRY3 | EMBJ3 (lucro −15,6%, metade do esperado), SBSP3 (dívida em 2,7x o EBITDA e lucro em queda), WEGE3 (lucro estável, margem em queda, preço alto), CURY3 (18% abaixo da média de 200 dias, juros altos), AXIA3 (lucro ajustado −19%; a mais fraca do bloco) | — |
+| Dividendos | CXSE3 | PETR4 (lucro oscila, parte em JCP), TAEE11 (dívida em 4,7x o EBITDA; liquidez de R$ 98 mi/dia), CPLE3 (JCP maior que dividendos em 2026; dívida +27%), VIVT3 (remuneração quase toda em JCP e redução de capital) | — |
+| FIIs | KNCR11, BTLG11, MCCI11 | KNRI11 (distribui R$ 1,10 com resultado de R$ 0,94 por cota) | **XPML11**, se o corte do rendimento se confirmar (R$ 0,92 → R$ 0,80 em novembro, o menor em 43 meses; P/VP perto de 1) |
+
+**Trocas em aberto (dependem do OK do usuário):** XPML11 → VISC11 (rendimento de R$ 0,82 a R$ 0,84, resultado acima do distribuído; falta confirmar P/VP e vacância). AXIA3 é a primeira candidata na revisão de março; reserva natural: ENEV3, ainda sem pesquisa de fundamentos.
+
+### Correções ao texto original
+
+- **Inflação:** o Focus de 23/11 projeta IPCA de 5,15% em 2026; os 5,6% são a projeção do Banco Central. IPCA em 12 meses: 4,63% (outubro).
+- **IFIX:** −4,9% em novembro e −8,2% em 2026 (fonte de 24/11). Dólar: R$ 5,91 em 24/11, com pico de R$ 6,00 em 23/11.
+- **Ibovespa** no mês, no trimestre e no ano: não confirmados nesta rodada.
+- **EMBJ3, AXIA3, SBSP3:** a tese original citava só o lado positivo; o lucro caiu nas três.
+- **PRIO3:** produção do 3T26 de 191,6 mil barris por dia (não ~196 mil).
+- **AXIA3:** os "até R$ 4 bi" a acionistas são de setembro/2026, não do resultado do 3T26.
+- **BPAC11:** a recompra de R$ 2 bi não foi confirmada.
+- **BTLG11:** a compra de galpões é uma negociação de R$ 920 mi ainda não concluída.
+- **P/VP dos FIIs mais altos que o escrito:** KNCR11 ~1,03, BTLG11 ~0,93, KNRI11 0,92, XPML11 0,95 a 0,99, MCCI11 ~1,01.
+- **MCCI11:** inadimplência zero em outubro/2026 (antes "não confirmada").
+- **PETR4:** a queda de ~30% nos proventos de 12 meses é coerente com o dividendo extraordinário de R$ 1,55 da janela anterior (provável, não confirmado). No 3T26, o que veio abaixo do esperado foi o lucro.
+- **Justificativas de swing** (IFR2, "só seguir tendência", "setup de recuo"): não valem mais; o swing foi abandonado. Em GGBR4 e FLRY3 nenhuma das duas regras deu lucro no histórico. A justificativa de cada ativo hoje é o fundamento.
+- **Horário da B3 desde 03/11/2026:** pregão das 10h às 17h55, leilão de fechamento até 18h, sem after-market de ações.
