@@ -342,7 +342,7 @@ function posicoes() {
 const gatilhoReforco = x => x.pm && (x.ref || 0) < 2 ? x.pm * (!x.ref ? REFORCO_1 : REFORCO_2 / REFORCO_1) : null;
 function situacao(x) {
   if (x.fora) return `<span class="chip sell">Fora</span>`;
-  if (x.alerta) return `<span class="chip warn">⚠ −35% topo</span>`;
+  if (x.alerta) return `<span class="chip warn">Em observação</span>`;
   if (x.rel > TETO * 0.9) return `<span class="chip info">Perto do teto</span>`;
   if (x.ref) return `<span class="chip buy">Reforço ${x.ref}×</span>`;
   if (x.pm && x.p <= x.pm * (REFORCO_1 + 0.04)) return `<span class="chip warn">Perto reforço</span>`;
@@ -714,9 +714,9 @@ function tRegras() {
   <section class="card full">
     <h2>Como o robô decide</h2><p class="sub">Regras da versão V3, a que foi melhor no teste com dados passados. Ele decide sozinho uma vez por dia útil, no fechamento (19h15), e não afrouxa nenhuma regra por conta própria.</p>
     <div class="rules">
-      <div class="rule"><b>🟢 Reforço nas quedas</b><p>Ativo 15% abaixo do preço médio: compra mais cerca de R$ 250 com a reserva. Segundo reforço com mais 12% de queda. No máximo 2 por mês, nenhum ativo acima de 2× o alvo, e só com proventos em dia.</p></div>
-      <div class="rule"><b>🔵 Realização de lucro</b><p>Posição acima de 2× o alvo volta para o alvo. No primeiro pregão de cada trimestre, rebalanceia tudo. FIIs só recebem compras, porque vender cota paga 20% de IR.</p></div>
-      <div class="rule"><b>🔴 Saída por tese</b><p>Ação de dividendos com proventos 30% menores em 12 meses, ou FII com 25% menores: vende tudo e volta quando os proventos se recuperam. Queda de 35% do topo só gera alerta, sem venda.</p></div>
+      <div class="rule"><b>🟢 Quando compra mais</b><p>Ativo 15% abaixo do preço médio: compra cerca de R$ 250 com a reserva. Segundo reforço com mais 12% de queda. Limites: 2 reforços por mês, até R$ 750 de custo por ativo, nada de reforço em ativo que já caiu mais de 40% ou que está em observação, e só com proventos em dia.</p></div>
+      <div class="rule"><b>🔵 Quando realiza lucro</b><p>No primeiro pregão de cada trimestre, o que passou do alvo é vendido e o que ficou abaixo é completado. É aqui que o lucro é realizado de verdade. A venda fora de hora, quando a posição passa de 2× o alvo, é rara. FIIs só recebem compras, porque vender cota paga 20% de IR.</p></div>
+      <div class="rule"><b>🔴 Quando sai</b><p><b style="display:inline">Dividendos e FIIs:</b> proventos de 12 meses 30% (ações) ou 25% (FIIs) abaixo da média dos 3 anos anteriores, por 40 pregões seguidos: vende tudo e volta quando se recuperam. <b style="display:inline">Valorização:</b> 35% abaixo do topo e abaixo da média de 200 dias: entra em observação; depois de 60 pregões assim, vende metade.</p></div>
     </div>
   </section>
   <section class="grid half">
@@ -724,6 +724,7 @@ function tRegras() {
       <div class="tbl-wrap"><table><tbody>
         ${linha("10 ações de valorização", "R$ 250 cada")}${linha("5 ações de dividendos", "R$ 250 cada")}${linha("5 FIIs", "R$ 250 cada")}
         ${linha("Reserva para reforços", "R$ 1.000, rendendo CDI")}${linha("Custo por operação", "0,13% (B3 e diferença de preço)")}
+        ${linha("O que o robô não enxerga", "lucro, dívida e notícias: isso fica para a revisão trimestral, feita sozinha em 22/03, 22/05, 22/08 e 22/11")}
         ${linha("Réguas a vencer", "CDI líquido, carteira parada, Ibovespa e IFIX")}</tbody></table></div></div>
     <div class="card"><h2>Porteiro de risco</h2><p class="sub">Toda ordem passa por estas travas. Os vetos aparecem no Extrato.</p>
       <div class="tbl-wrap"><table><tbody>

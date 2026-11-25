@@ -1,6 +1,6 @@
 # Argos Trade B3 · Plano
 
-Versão 0.3 · 25/11/2026 · fase de simulação (robô simulado diário ativo, com porteiro de risco)
+Versão 0.4 · 25/11/2026 · fase de simulação (robô simulado diário ativo, com porteiro de risco)
 
 ---
 
@@ -164,3 +164,20 @@ Comandos pelo Telegram (`/status`, `/pausar`) ficam para a fase real: exigem um 
 
 - `simulado/ir_mensal.csv`: apuração de cada mês (vendas de ações, lucro, isenção, lucro em FIIs e IR devido).
 - `simulado/operacoes.csv` e `simulado/proventos.csv`: base para a declaração anual, se um dia virar real.
+
+---
+
+## 14. Ajustes da auditoria de 25/11/2026 (em vigor; valem sobre as seções 9 e 10 onde houver diferença)
+
+| Regra | Como ficou | Por quê |
+|---|---|---|
+| Saída por proventos | Compara os últimos 12 meses com a **média dos 3 anos anteriores** e só vende com o corte confirmado por **40 pregões seguidos**. FII com menos de 10 pagamentos em 12 meses não é medido | A regra antiga venderia PETR4 no segundo dia, por causa dos dividendos extraordinários do ano anterior; e o histórico de FIIs no Yahoo tem buracos |
+| Reforço | No máximo **R$ 750 de custo por ativo**; não reforça ativo **mais de 40% abaixo** do preço médio nem ativo em observação | Evita colocar dinheiro sem limite numa ação que só cai |
+| Saída das ações de valorização | 35% abaixo do topo **e** abaixo da média de 200 dias: **observação** (sem reforço e sem recompra). Depois de **60 pregões** assim, **vende metade**; repete a cada 60 pregões | Antes essas 10 ações não tinham regra de saída |
+| Ativo sem cotação | O robô pula só aquele ativo e avisa; acima de 5 ativos sem cotação, não roda | Antes uma falha derrubava o dia inteiro |
+| Horário | Robô às **19h15**; sinal de vida às **21h15** | A B3 fecha às 18h de novembro a março e a cotação tem atraso |
+| Revisão trimestral | Tarefa agendada em 22/03, 22/05, 22/08 e 22/11: roda a skill `revisao-trimestral-b3` e grava em `revisoes/`. **Trocas de ativo só com o OK do usuário** | O robô não enxerga lucro, dívida nem notícias |
+
+**Teste com dados de 2022 a 2026** (`backtest/ROBO_REGRAS.md`): V3 original R$ 14.449; V3b (proventos, teto e piso) R$ 14.390; V5 (V3b + realização com lucro mínimo + saída de valorização) R$ 13.918. A regra de venda de metade **não disparou nenhuma vez** nesse período, porque os ativos foram escolhidos sabendo que sobreviveram; o custo veio de não reforçar ações em observação. Ela entra como seguro, não como fonte de retorno. A variação "realização só com 25% de lucro" piorou o teste e **não foi adotada**.
+
+**Limites conhecidos:** proventos entram pelo valor bruto (o JCP tem 17,5% de IR na fonte); a "realização em 2x o alvo" quase nunca dispara, porque o rebalanceamento trimestral age antes.

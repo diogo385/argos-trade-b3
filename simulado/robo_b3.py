@@ -40,6 +40,8 @@ CORTE_PERSISTE = 40          # pregões seguidos (cerca de 2 meses) com o corte 
 PAGAMENTOS_MIN_FII = 10      # FII com menos pagamentos que isso em 12 meses = histórico com buraco: não mede
 APORTE_MAX = 750.0           # custo máximo acumulado num ativo (compra inicial + reforços)
 QUEDA_MAX_REFORCO = 0.40     # não reforça ativo que já caiu mais que isso do preço médio
+OBS_QUEDA, OBS_PREGOES = 0.35, 60   # ação de valorização 35% abaixo do topo e abaixo da média de 200 dias:
+                                    # entra em observação (sem reforço); depois de 60 pregões assim, vende metade
 FALHAS_MAX = 5               # mais ativos sem cotação que isso = falha geral: o robô não roda
 ALERTA_QUEDA = 0.35
 IR_ACOES, IR_FII, IR_CAIXA, ISENCAO = 0.15, 0.20, 0.15, 20_000.0
@@ -339,9 +341,28 @@ def decidir(est, P, px, dados, hoje, ops, alertas):
         if a not in c["qtd"] and a not in est["fora"]:
             P.comprar(a, alvo, ops, "entrada na carteira (posição pendente ou proventos recuperados)", livre=True)
 
+    # 1b. saída das ações de valorização: observação e venda de metade
+    obs = est.setdefault("obs", {})
+    for a in VALORIZACAO:
+        if a not in c["qtd"]:
+            obs.pop(a, None)
+            continue
+        est["topo"][a] = max(est["topo"].get(a, px[a]), px[a])
+        mm = P.info.get(a, {}).get("mm200")
+        ruim = bool(mm) and px[a] < est["topo"][a] * (1 - OBS_QUEDA) and px[a] < mm
+        obs[a] = obs.get(a, 0) + 1 if ruim else 0
+        if obs[a] == 1:
+            alertas.append(f"ℹ️ {a}: {pct(px[a] / est['topo'][a] - 1, 0)} do topo e abaixo da média de 200 dias. Em observação: "
+                           f"não reforço, e vendo metade se continuar assim por {OBS_PREGOES} pregões.")
+        if obs[a] >= OBS_PREGOES:
+            if P.vender(a, c["qtd"][a] * px[a] / 2, ops,
+                        f"{OBS_PREGOES} pregões em observação ({pct(px[a] / est['topo'][a] - 1, 0)} do topo, abaixo da média "
+                        "de 200 dias): vende metade", tese=True, minimo=0):
+                obs[a] = 0
+
     # 2. reforço nas quedas, com a reserva
     for a in ATIVOS:
-        if a in est["fora"] or a not in c["qtd"] or est["reforcos_mes"] >= REFORCOS_MES:
+        if a in est["fora"] or a not in c["qtd"] or est["reforcos_mes"] >= REFORCOS_MES or obs.get(a, 0) > 0:
             continue
         if px[a] >= c["pm"][a]:
             est["reforcos"][a] = 0
@@ -369,20 +390,11 @@ def decidir(est, P, px, dados, hoje, ops, alertas):
                 P.vender(a, excesso, ops, "rebalanceamento trimestral: acima do alvo", livre=True)
         for a in dentro:
             falta = alvo - c["qtd"].get(a, 0) * px[a]
-            if falta > 0 and c["caixa"] - falta > v * FRACAO_RESERVA * 0.5:
+            if falta > 0 and obs.get(a, 0) == 0 and c["caixa"] - falta > v * FRACAO_RESERVA * 0.5:
                 P.comprar(a, falta, ops, "rebalanceamento trimestral: abaixo do alvo", livre=True)
         est["reforcos"] = {}
 
-    # 4. alerta de queda forte (não vende)
-    for a in VALORIZACAO:
-        if a not in c["qtd"]:
-            continue
-        est["topo"][a] = max(est["topo"].get(a, px[a]), px[a])
-        caiu = px[a] < est["topo"][a] * (1 - ALERTA_QUEDA)
-        if caiu and not est["alertado"].get(a):
-            alertas.append(f"ℹ️ {a} caiu {pct(px[a] / est['topo'][a] - 1, 0)} do topo. Não vendo (o stop automático piorou o "
-                           "backtest), mas vale revisar a tese na próxima revisão trimestral.")
-        est["alertado"][a] = caiu
+    est["alertado"] = {a: obs.get(a, 0) > 0 for a in VALORIZACAO if a in c["qtd"]}   # usado pelo monitor
 
 
 # ---------------------------------------------------------------- execução
@@ -453,7 +465,9 @@ def coletar(hoje, ref, registro, alertas, ultimos, susp_dias):
             suspeito = False
             registro.append(f"coletor: {a} aceito no novo patamar depois de 3 pregões")
         susp_dias[a] = susp_dias.get(a, 0) + 1 if suspeito else 0
-        i = {"data": d["data"], "var": round(salto if suspeito else var, 4), "velho": d["data"] != hoje, "suspeito": suspeito}
+        fech = [x for _, x in d.get("serie") or []]
+        i = {"data": d["data"], "var": round(salto if suspeito else var, 4), "velho": d["data"] != hoje, "suspeito": suspeito,
+             "mm200": sum(fech[-MM_LONGA:]) / MM_LONGA if len(fech) >= MM_LONGA else None}
         px[a] = bom if suspeito else d["preco"]   # dado suspeito não entra na conta do patrimônio
         info[a] = i
         if a in ATIVOS and suspeito:
@@ -592,7 +606,8 @@ def main(agora=None):
     est["grupos"] = {"valorizacao": VALORIZACAO, "dividendos": DIVIDENDOS, "fiis": FIIS}
     est["capital"], est["reserva"] = CAPITAL, RESERVA
     est["ultima_execucao"] = agora.isoformat(timespec="minutes")
-    est["limites"] = {"aporte_max": APORTE_MAX, "queda_max_reforco": QUEDA_MAX_REFORCO, "corte_persiste": CORTE_PERSISTE}
+    est["mm200"] = {a: round(info[a]["mm200"], 4) for a in VALORIZACAO if info[a].get("mm200")}
+    est["limites"] = {"obs_queda": OBS_QUEDA, "obs_pregoes": OBS_PREGOES, "aporte_max": APORTE_MAX, "queda_max_reforco": QUEDA_MAX_REFORCO, "corte_persiste": CORTE_PERSISTE}
     est["travas"] = {"ordem_max": ORDEM_MAX, "max_ops_dia": MAX_OPS_DIA, "vol_max_dia": VOL_MAX_DIA,
                      "salto_suspeito": SALTO_SUSPEITO, "vendas_mes_limite": VENDAS_MES_LIMITE}
     registro.append(f"diário: patrimônio {brl(v)} · caixa {brl(c['caixa'])} · {len(ops)} operações · {len(prov)} proventos")
@@ -642,8 +657,8 @@ def main(agora=None):
                  f"Compras feitas: {len(ops)} de {len(ATIVOS)} · caixa após as compras: {brl(c['caixa'])}\n"
                  + "".join(a + "\n" for a in alertas) +
                  "".join(f"⏸️ Porteiro vetou {x['ativo']}: {x['trava']}. Entra quando o dado normalizar.\n" for x in P.vetos) +
-                 "Rodo todo dia útil depois do fechamento e decido sozinho: reforço nas quedas com a reserva, realizo lucro "
-                 "quando uma posição passa de 2x o alvo, saio se os proventos despencarem e rebalanceio a cada trimestre. "
+                 "Rodo todo dia útil às 19h15 e decido sozinho: reforço nas quedas com a reserva, rebalanceio a cada trimestre, "
+                 "saio se os proventos despencarem por 2 meses e vendo metade da ação de valorização que ficar 60 pregões em queda forte. "
                  "Toda ordem passa pelo porteiro de risco.")
     else:
         linhas = [f"{ROTULO} · 📊 Fechamento {agora:%d/%m}"]
