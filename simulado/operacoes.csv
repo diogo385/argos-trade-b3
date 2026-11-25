@@ -1,0 +1,21 @@
+data;tipo;ativo;quantidade;preco;valor;custo;motivo
+2026-11-25;COMPRA;BPAC11;4;52.95;211.80;0.28;montagem inicial
+2026-11-25;COMPRA;ITUB4;6;40.01;240.06;0.31;montagem inicial
+2026-11-25;COMPRA;EMBJ3;2;103.20;206.40;0.27;montagem inicial
+2026-11-25;COMPRA;PRIO3;4;60.50;242.00;0.31;montagem inicial
+2026-11-25;COMPRA;SBSP3;8;28.48;227.84;0.30;montagem inicial
+2026-11-25;COMPRA;WEGE3;5;49.65;248.25;0.32;montagem inicial
+2026-11-25;COMPRA;CURY3;9;26.39;237.51;0.31;montagem inicial
+2026-11-25;COMPRA;GGBR4;9;25.86;232.74;0.30;montagem inicial
+2026-11-25;COMPRA;AXIA3;5;46.16;230.80;0.30;montagem inicial
+2026-11-25;COMPRA;FLRY3;11;22.45;246.95;0.32;montagem inicial
+2026-11-25;COMPRA;PETR4;6;41.36;248.16;0.32;montagem inicial
+2026-11-25;COMPRA;TAEE11;6;39.76;238.56;0.31;montagem inicial
+2026-11-25;COMPRA;CPLE3;16;14.90;238.40;0.31;montagem inicial
+2026-11-25;COMPRA;CXSE3;12;20.30;243.60;0.32;montagem inicial
+2026-11-25;COMPRA;VIVT3;7;34.80;243.60;0.32;montagem inicial
+2026-11-25;COMPRA;KNCR11;2;103.20;206.40;0.27;montagem inicial
+2026-11-25;COMPRA;BTLG11;2;97.00;194.00;0.25;montagem inicial
+2026-11-25;COMPRA;KNRI11;1;147.50;147.50;0.19;montagem inicial
+2026-11-25;COMPRA;VISC11;2;97.14;194.28;0.25;montagem inicial
+2026-11-25;COMPRA;MCCI11;2;90.24;180.48;0.23;montagem inicial
