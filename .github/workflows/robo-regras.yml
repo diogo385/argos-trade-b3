@@ -1,0 +1,40 @@
+name: Argos Trade B3 · regras do robô
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "backtest/robo_regras.py"
+      - ".github/workflows/robo-regras.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: robo-regras
+  cancel-in-progress: true
+
+jobs:
+  rodar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Simular as regras do robô
+        working-directory: backtest
+        run: python robo_regras.py resultado
+
+      - name: Salvar no repositório
+        run: |
+          git config user.name "argos-trade-b3"
+          git config user.email "argos-trade-b3@users.noreply.github.com"
+          git add backtest/ROBO_REGRAS.md
+          git diff --cached --quiet || git commit -m "Argos Trade B3: regras do robô de $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"
+          git pull --rebase
+          git push
