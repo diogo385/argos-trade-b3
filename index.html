@@ -86,7 +86,7 @@ select.pick { font-size: 13px; font-weight: 600; padding: 6px 10px; border-radiu
 .legend i, .tip i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
 .chart { position: relative; }
 .chart svg { width: 100%; display: block; overflow: visible; }
-.chart .ax { fill: var(--dim); font-size: 11px; }
+.chart .ax { fill: var(--muted); font-size: 11px; }
 .chart .grid-l { stroke: var(--line); stroke-width: 1; }
 .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 10px;
   box-shadow: 0 6px 20px rgba(12, 28, 63, .12); font-size: 12px; min-width: 180px; display: none; z-index: 2; }
@@ -119,6 +119,8 @@ tr.click { cursor: pointer; } tr.click:hover td { background: var(--surface-2); 
 .alvo { color: var(--muted); font-size: 11.5px; }
 
 /* lista de ativos no celular */
+.so-cel, .so-cel-i { display: none; }
+.mot { color: var(--muted); font-weight: 400; font-size: 12px; white-space: normal; }
 .cards { display: none; list-style: none; margin: 0; padding: 0; }
 .cards li { border-bottom: 1px solid var(--line); }
 .cards li:last-child { border-bottom: 0; }
@@ -155,7 +157,7 @@ details summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: v
 .trig li { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .trig li:last-child { border-bottom: 0; }
 .trig .bar { height: 6px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; position: relative; overflow: hidden; }
-.trig .bar span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--cyan); }
+.trig .bar span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--brand); }
 .trig .txt { font-size: 12px; color: var(--muted); }
 .trig .val { font-size: 12.5px; font-weight: 700; text-align: right; }
 .trig-h { font-size: 12px; font-weight: 700; color: var(--ink-2); margin: 12px 0 2px; text-transform: uppercase; letter-spacing: .04em; }
@@ -174,17 +176,21 @@ footer { color: var(--muted); font-size: 12px; margin-top: 24px; display: flex; 
 @media (max-width: 980px) { .hero { grid-template-columns: repeat(3, minmax(0, 1fr)); } .hero .main { grid-column: 1 / -1; } .hero.idx { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 860px) {
   .two, .half, .rules { grid-template-columns: minmax(0, 1fr); }
-  .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .step::after { display: none; }
+  .flow { grid-template-columns: repeat(3, minmax(0, 1fr)); } .step::after { display: none; }
   .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
+  .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hero .main .v { font-size: 28px; }
   .hero:not(.idx) .kpi:last-child { grid-column: 1 / -1; }
   .blocks { grid-template-columns: minmax(0, 1fr); } .brand img { height: 48px; } .brand .t1 { font-size: 18px; }
   .card { padding: 14px; }
-  .so-desk { display: none; } .cards { display: block; }
+  .so-desk { display: none; } .cards { display: block; } .so-cel { display: block; } .so-cel-i { display: inline-flex; margin-left: 6px; }
+  th, td { padding: 8px 4px; } table { font-size: 12.5px; } th { font-size: 10.5px; letter-spacing: .02em; }
+  td.wrap { white-space: normal; }
+  .flow .step:last-child { grid-column: 1 / -1; }
   .tabs button { padding: 8px 11px; font-size: 13.5px; }
-  .seg { overflow-x: auto; }
+  .seg { flex-wrap: wrap; }
 }
 @media (max-width: 420px) { .tabs div { gap: 0; justify-content: space-between; } .tabs button { padding: 8px 8px; font-size: 13px; } }
 </style>
@@ -605,14 +611,14 @@ function tHistorico() {
       ${tile("Robô", pct(ret("patrimonio"), 2), `carteira parada ${pct(ret("carteira_parada"), 2)}`, sinal(ret("patrimonio")))}
       ${tile("Contra o CDI", pct(ret("patrimonio") - ret("cdi"), 2).replace("%", " p.p."), `CDI líquido ${pct(ret("cdi"), 2)}`, sinal(ret("patrimonio") - ret("cdi")))}
       ${tile("Maior queda do pico", dd ? "−" + n2(dd * 100, 1) + "%" : "0,0%", "do patrimônio do robô no período")}
-      ${tile("Melhor e pior dia", melhor ? `${pct(melhor.r)} · ${pct(pior.r)}` : "—", melhor ? `${curta(melhor.d)} e ${curta(pior.d)}` : "a partir do 2º fechamento")}
+      ${tile("Melhor dia", melhor ? pct(melhor.r) : "—", melhor ? `em ${curta(melhor.d)} · pior dia ${pct(pior.r)} em ${curta(pior.d)}` : "a partir do 2º fechamento")}
     </div>
   </section>
   <section class="grid half">
     <div class="card">
       <h2>Retorno por mês</h2><p class="sub">Cada mês contra o fim do mês anterior. O mês corrente é parcial.</p>
-      ${linhasMes.length ? `<div class="tbl-wrap" style="max-height:360px;overflow:auto"><table><thead><tr><th>Mês</th>${SERIES.map(s => `<th class="r">${s.n.replace("Carteira parada", "Parada").replace(" líquido", "")}</th>`).join("")}</tr></thead><tbody>
-        ${linhasMes.map(x => `<tr><td class="num">${mesBR(x.m)}</td>${SERIES.map(s => `<td class="r num ${sinal(x.r[s.k])}" ${s.k === "patrimonio" ? 'style="font-weight:700"' : ""}>${pct(x.r[s.k], 2)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<div class="empty">Aparece depois do primeiro fechamento.</div>`}
+      ${linhasMes.length ? `<div class="tbl-wrap" style="max-height:360px;overflow:auto"><table><thead><tr><th>Mês</th>${SERIES.map(s => `<th class="r">${s.n.replace("Carteira parada", "Parada").replace(" líquido", "").replace("Ibovespa", "Ibov")}</th>`).join("")}</tr></thead><tbody>
+        ${linhasMes.map(x => `<tr><td class="num">${mesBR(x.m)}</td>${SERIES.map(s => `<td class="r num ${sinal(x.r[s.k])}" ${s.k === "patrimonio" ? 'style="font-weight:700"' : ""}>${pct(x.r[s.k], 1)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<div class="empty">Aparece depois do primeiro fechamento.</div>`}
     </div>
     <div class="card">
       <h2>Proventos por mês</h2><p class="sub">Dividendos, JCP e rendimentos de FIIs creditados nos últimos 12 meses, em R$.</p>
@@ -654,7 +660,7 @@ function barras() {
     ${ult.map((k, i) => { const v = porMes[k] || 0, bh = Math.max(v ? 5 : 0, v / mx * (H - m.t - m.b)), w = Math.min(46, bw * 0.6), x = m.l + i * bw + (bw - w) / 2, r = Math.min(4, bh / 2);
       return `<g><title>${mesBR(k)}: ${brl(v)}</title>${v ? `<path d="M${x},${H - m.b} V${H - m.b - bh + r} q0,-${r} ${r},-${r} H${x + w - r} q${r},0 ${r},${r} V${H - m.b} Z" fill="var(--s1)"/>
         <text x="${x + w / 2}" y="${H - m.b - bh - 5}" text-anchor="middle" font-size="10.5" fill="var(--ink-2)" class="num">${n2(v, 0)}</text>` : ""}
-        <text x="${x + w / 2}" y="${H - 6}" text-anchor="middle" font-size="10.5" fill="var(--dim)">${mesBR(k).slice(0, 3)}</text></g>`; }).join("")}</svg>`;
+        <text x="${x + w / 2}" y="${H - 6}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${mesBR(k).slice(0, 3)}</text></g>`; }).join("")}</svg>`;
 }
 
 // =====================================================================  EXTRATO
@@ -676,12 +682,12 @@ function tExtrato() {
   const chip = t => ({ COMPRA: `<span class="chip buy">Compra</span>`, VENDA: `<span class="chip sell">Venda</span>`, PROVENTO: `<span class="chip info">Provento</span>`, VETO: `<span class="chip warn">Veto</span>`, IR: `<span class="chip ok">IR</span>` }[t]);
   const dataTxt = x => x.tipo === "IR" ? mesBR(x.data.slice(0, 7)) : dataBR(x.data);
   const filtrado = S.fTipo !== "todos" || S.fAtivo || S.fMes;
-  const corpo = visiveis.map(x => `<tr><td class="num">${dataTxt(x)}</td><td>${chip(x.tipo)}</td><td class="tk">${esc(x.ativo) || "—"}</td><td class="num so-desk">${esc(x.det)}</td>
-    <td class="r num ${x.valor == null ? "" : sinal(x.valor)}">${x.valor == null ? "—" : din(x.valor)}</td><td class="motivo">${esc(x.motivo)}</td></tr>`);
+  const corpo = visiveis.map(x => `<tr><td class="num">${dataTxt(x)}</td><td class="so-desk">${chip(x.tipo)}</td><td class="tk wrap">${esc(x.ativo) || "—"}<span class="so-cel-i">${chip(x.tipo)}</span><div class="mot so-cel">${esc(x.motivo)}</div></td><td class="num so-desk">${esc(x.det)}</td>
+    <td class="r num ${x.valor == null ? "" : sinal(x.valor)}">${x.valor == null ? "—" : din(x.valor)}</td><td class="motivo so-desk">${esc(x.motivo)}</td></tr>`);
   if (agrupar) {  // a montagem inicial vira uma linha só, na posição da data dela
     const i = visiveis.findIndex(x => x.data < mont[0].data);
-    corpo.splice(i < 0 ? corpo.length : i, 0, `<tr><td class="num">${dataBR(mont[0].data)}</td><td><span class="chip buy">Compra</span></td><td class="tk">${mont.length} ativos</td><td class="so-desk">montagem inicial da carteira</td>
-      <td class="r num neg">${din(mont.reduce((s, x) => s + x.valor, 0))}</td><td class="motivo">montagem inicial · <button type="button" class="linkbtn" id="btnMont">ver as ${mont.length} compras</button></td></tr>`);
+    corpo.splice(i < 0 ? corpo.length : i, 0, `<tr><td class="num">${dataBR(mont[0].data)}</td><td class="so-desk"><span class="chip buy">Compra</span></td><td class="tk wrap">${mont.length} ativos<span class="so-cel-i"><span class="chip buy">Compra</span></span><div class="mot">montagem inicial · <button type="button" class="linkbtn" id="btnMont">ver as ${mont.length} compras</button></div></td><td class="so-desk">montagem inicial da carteira</td>
+      <td class="r num neg">${din(mont.reduce((s, x) => s + x.valor, 0))}</td><td class="so-desk"></td></tr>`);
   }
   return `
   <section class="card full">
@@ -695,13 +701,13 @@ function tExtrato() {
     </div>
     <div class="totais num"><span><b>${ls.length}</b> ${ls.length === 1 ? "lançamento" : "lançamentos"}</span><span>Compras <b>${brl(soma("COMPRA"))}</b></span><span>Vendas <b>${brl(soma("VENDA"))}</b></span>
       <span>Proventos <b class="pos">${brl(soma("PROVENTO"))}</b></span><span>Custos de negociação <b>${brl(custos)}</b></span></div>
-    ${ls.length ? `<div class="tbl-wrap" style="max-height:560px;overflow:auto"><table><thead><tr><th>Data</th><th>Tipo</th><th>Ativo</th><th class="so-desk">Detalhe</th><th class="r">Valor</th><th>Motivo</th></tr></thead>
+    ${ls.length ? `<div class="tbl-wrap" style="max-height:560px;overflow:auto"><table><thead><tr><th>Data</th><th class="so-desk">Tipo</th><th>Ativo</th><th class="so-desk">Detalhe</th><th class="r">Valor</th><th class="so-desk">Motivo</th></tr></thead>
       <tbody>${corpo.join("")}</tbody></table></div>` : `<div class="empty">Nenhum lançamento com esses filtros. <button type="button" class="linkbtn" id="btnLimpar2">Limpar filtros</button></div>`}
   </section>
   <section class="card full">
-    <h2>Imposto de renda (simulado)</h2><p class="sub">Apuração de cada mês, em R$. Ações ficam isentas com vendas até R$ 20 mil no mês; FIIs pagam 20% sobre o lucro.</p>
-    ${D.ir.length ? `<div class="tbl-wrap"><table><thead><tr><th>Mês</th><th class="r">Vendas de ações</th><th class="r">Lucro em ações</th><th>Isento</th><th class="r">Lucro em FIIs</th><th class="r">IR devido</th></tr></thead><tbody>
-      ${D.ir.slice().reverse().map(x => `<tr><td class="num">${mesBR(x.mes)}</td><td class="r num">${n2(+x.vendas_acoes)}</td><td class="r num ${sinal(+x.ganho_acoes)}">${n2(+x.ganho_acoes)}</td><td>${esc(x.isento_acoes)}</td>
+    <h2>Imposto de renda (simulado)</h2><p class="sub">Apuração de cada mês, em R$: vendas de ações, lucro em ações e em FIIs e imposto devido. Ações ficam isentas com vendas até R$ 20 mil no mês; FIIs pagam 20% sobre o lucro.</p>
+    ${D.ir.length ? `<div class="tbl-wrap"><table><thead><tr><th>Mês</th><th class="r">Vendas</th><th class="r">Lucro ações</th><th class="so-desk">Isento</th><th class="r">Lucro FIIs</th><th class="r">IR</th></tr></thead><tbody>
+      ${D.ir.slice().reverse().map(x => `<tr><td class="num">${mesBR(x.mes)}</td><td class="r num">${n2(+x.vendas_acoes)}</td><td class="r num ${sinal(+x.ganho_acoes)}">${n2(+x.ganho_acoes)}</td><td class="so-desk">${esc(x.isento_acoes)}</td>
         <td class="r num ${sinal(+x.ganho_fiis)}">${n2(+x.ganho_fiis)}</td><td class="r num">${n2(+x.ir_devido)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">A primeira apuração aparece na virada do mês.</div>`}
   </section>`;
 }
@@ -712,7 +718,7 @@ function tRegras() {
   const linha = (a, b) => `<tr><td class="solto">${a}</td><td class="r solto">${b}</td></tr>`;
   return `
   <section class="card full">
-    <h2>Como o robô decide</h2><p class="sub">Regras da versão V3, a que foi melhor no teste com dados passados. Ele decide sozinho uma vez por dia útil, no fechamento (19h15), e não afrouxa nenhuma regra por conta própria.</p>
+    <h2>Como o robô decide</h2><p class="sub">Regras em vigor desde 25/11/2026, testadas com dados passados e ajustadas pela auditoria. Ele decide sozinho uma vez por dia útil, no fechamento (19h15), e não afrouxa nenhuma regra por conta própria.</p>
     <div class="rules">
       <div class="rule"><b>🟢 Quando compra mais</b><p>Ativo 15% abaixo do preço médio: compra cerca de R$ 250 com a reserva. Segundo reforço com mais 12% de queda. Limites: 2 reforços por mês, até R$ 750 de custo por ativo, nada de reforço em ativo que já caiu mais de 40% ou que está em observação, e só com proventos em dia.</p></div>
       <div class="rule"><b>🔵 Quando realiza lucro</b><p>No primeiro pregão de cada trimestre, o que passou do alvo é vendido e o que ficou abaixo é completado. É aqui que o lucro é realizado de verdade. A venda fora de hora, quando a posição passa de 2× o alvo, é rara. FIIs só recebem compras, porque vender cota paga 20% de IR.</p></div>
@@ -780,7 +786,13 @@ document.addEventListener("change", ev => {
   if (id === "pickDia") S.ativoDia = v; else if (id === "pickHist") S.ativo = v; else if (id === "fAtivo") S.fAtivo = v; else if (id === "fMes") S.fMes = v; else return;
   render();
 });
-document.addEventListener("keydown", ev => { if (ev.key === "Enter" && ev.target.matches("tr.click")) ev.target.click(); });
+document.addEventListener("keydown", ev => {
+  if (ev.key === "Enter" && ev.target.matches("tr.click")) return ev.target.click();
+  if (ev.target.matches('[role="tab"]') && (ev.key === "ArrowRight" || ev.key === "ArrowLeft")) {
+    const i = ABAS.findIndex(a => a[0] === aba), j = (i + (ev.key === "ArrowRight" ? 1 : ABAS.length - 1)) % ABAS.length;
+    ev.preventDefault(); ir(ABAS[j][0]); el("tab-" + ABAS[j][0]).focus();
+  }
+});
 const inicial = location.hash.slice(1); if (ABAS.some(a => a[0] === inicial)) aba = inicial;
 let rz, larg = window.innerWidth;
 window.addEventListener("resize", () => { if (window.innerWidth === larg) return; larg = window.innerWidth; clearTimeout(rz); rz = setTimeout(render, 150); });
