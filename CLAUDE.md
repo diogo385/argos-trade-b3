@@ -10,7 +10,8 @@
 |---|---|
 | `simulado/robo_b3.py` | Robô simulado diário (18h30, dias úteis), regras V3; lista dos 20 ativos |
 | `simulado/*.csv`, `simulado/estado.json` | Histórico, operações, proventos e estado do robô (escritos pelo Actions) |
-| `index.html` | Monitor web (GitHub Pages: https://diogo385.github.io/argos-trade-b3/) |
+| `index.html` | Monitor web em 5 abas (GitHub Pages: https://diogo385.github.io/argos-trade-b3/) |
+| `simulado/mercado.py` + ramo `mercado` | Cotações do dia para a aba Mercado (Actions, a cada 15 min no pregão) |
 | `ANALISE.md` | Tese e critérios de cada ativo |
 | `PLANO.md` | Regras do sistema (seção 9 = regras em vigor) |
 | `backtest/` | Backtests e triagem (`TRIAGEM.md`, `ROBO_REGRAS.md`, `CARTEIRA_SUGERIDA.md`) |

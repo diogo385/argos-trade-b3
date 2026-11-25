@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <style>
-/* Monitor do Argos Trade B3: tema claro, lê os arquivos do robô simulado (simulado/*). */
+/* Monitor do Argos Trade B3: tema claro, 5 abas. Lê simulado/* (robô) e o ramo "mercado" (cotações do dia). */
 :root {
   color-scheme: light;
   --bg: #f4f7fb; --surface: #ffffff; --surface-2: #f8fafd; --line: #e2e8f1; --line-2: #cfd8e5;
@@ -23,16 +23,17 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.5;
-  -webkit-font-smoothing: antialiased; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 .num { font-variant-numeric: tabular-nums; }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 16px 48px; }
 a { color: var(--brand); text-decoration: none; } a:hover { text-decoration: underline; }
+button, select { font: inherit; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
 
 /* topo */
-.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
 .brand { display: flex; align-items: center; gap: 14px; }
-.brand img { height: 64px; width: auto; display: block; }
+.brand img { height: 60px; width: auto; display: block; }
 .brand .t1 { font-weight: 800; font-size: 22px; letter-spacing: .06em; line-height: 1.1; }
 .brand .t1 b { color: var(--brand); }
 .brand .t2 { color: var(--muted); font-size: 13px; }
@@ -40,72 +41,114 @@ a { color: var(--brand); text-decoration: none; } a:hover { text-decoration: und
 .pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 600;
   background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); white-space: nowrap; }
 .pill.sim { background: var(--warn-soft); border-color: #f3d6a8; color: var(--warn); }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); flex: none; }
 .dot.ok { background: var(--pos); box-shadow: 0 0 0 3px var(--pos-soft); }
 .dot.late { background: var(--warn); box-shadow: 0 0 0 3px var(--warn-soft); }
+
+/* abas */
+.tabs { position: sticky; top: 0; z-index: 5; background: var(--bg); margin: 0 -16px 14px; padding: 6px 16px; border-bottom: 1px solid var(--line); }
+.tabs div { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.tabs div::-webkit-scrollbar { display: none; }
+.tabs button { border: 0; background: transparent; color: var(--muted); font-weight: 700; font-size: 14px; padding: 9px 14px; border-radius: 10px; cursor: pointer; white-space: nowrap; }
+.tabs button:hover { color: var(--ink); background: var(--surface); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: #fff; }
 
 /* cartões */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; min-width: 0; }
 .card h2 { font-size: 15px; margin: 0 0 2px; font-weight: 700; }
-.card .sub { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; }
+.card .sub, .sub { color: var(--muted); font-size: 12.5px; margin: 0 0 14px; }
 .grid { display: grid; gap: 14px; }
-.kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); margin-bottom: 14px; }
-.kpi { padding: 14px 16px; }
-.kpi .lab { color: var(--muted); font-size: 12px; font-weight: 600; }
-.kpi .v { font-size: 22px; font-weight: 800; margin-top: 4px; line-height: 1.15; letter-spacing: -.01em; }
-.kpi .s { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.pos { color: var(--pos); } .neg { color: var(--neg); }
 .two { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); margin-bottom: 14px; }
+.half { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin-bottom: 14px; }
 .full { margin-bottom: 14px; }
+.pos { color: var(--pos); } .neg { color: var(--neg); }
 
-/* gráfico */
+/* destaque do resumo */
+.hero { display: grid; grid-template-columns: minmax(0, 1.25fr) repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+.hero.idx { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.hero .main .v { font-size: 34px; font-weight: 800; letter-spacing: -.02em; line-height: 1.1; }
+.hero .main .r { font-size: 17px; font-weight: 800; margin-top: 4px; }
+.kpi .lab { color: var(--muted); font-size: 12px; font-weight: 600; }
+.kpi .v { font-size: 21px; font-weight: 800; margin-top: 4px; line-height: 1.15; }
+.kpi .s { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.kpi .s.pos { color: var(--pos); } .kpi .s.neg { color: var(--neg); }
+
+/* controles */
 .chart-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
-.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--surface-2); }
-.seg button { font: inherit; font-size: 12px; font-weight: 600; border: 0; background: transparent; color: var(--muted); padding: 5px 11px; cursor: pointer; }
+.ctrls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--surface-2); max-width: 100%; }
+.seg button { font-size: 12px; font-weight: 600; border: 0; background: transparent; color: var(--muted); padding: 5px 11px; cursor: pointer; white-space: nowrap; }
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-2); }
+select.pick { font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 9px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); max-width: 100%; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 4px 0 8px; }
-.legend button { font: inherit; font-size: 12.5px; color: var(--ink-2); background: none; border: 0; padding: 2px 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
-.legend button[aria-pressed="false"] { opacity: .4; }
-.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.legend button, .legend span { font-size: 12.5px; color: var(--ink-2); background: none; border: 0; padding: 2px 0; display: inline-flex; align-items: center; gap: 6px; }
+.legend button { cursor: pointer; } .legend button[aria-pressed="false"] { opacity: .45; text-decoration: line-through; }
+.legend i, .tip i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; flex: none; }
 .chart { position: relative; }
-.chart svg { width: 100%; height: 300px; display: block; overflow: visible; }
+.chart svg { width: 100%; display: block; overflow: visible; }
 .chart .ax { fill: var(--dim); font-size: 11px; }
 .chart .grid-l { stroke: var(--line); stroke-width: 1; }
 .tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 10px;
-  box-shadow: 0 6px 20px rgba(12, 28, 63, .12); font-size: 12px; min-width: 190px; display: none; z-index: 2; }
+  box-shadow: 0 6px 20px rgba(12, 28, 63, .12); font-size: 12px; min-width: 180px; display: none; z-index: 2; }
 .tip .d { font-weight: 700; margin-bottom: 4px; }
 .tip .r { display: flex; justify-content: space-between; gap: 12px; }
 .tip .r span:first-child { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
-.tip i { width: 10px; height: 3px; border-radius: 2px; display: inline-block; }
-.linkbtn { font: inherit; font-size: 12px; color: var(--brand); background: none; border: 0; padding: 0; cursor: pointer; font-weight: 600; }
+.linkbtn { font-size: 12px; color: var(--brand); background: none; border: 0; padding: 0; cursor: pointer; font-weight: 600; }
 
 /* tabelas */
 .tbl-wrap { overflow-x: auto; margin: 0 -4px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em;
-  padding: 8px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; padding: 8px 7px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 td { padding: 9px 7px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 tr:last-child td { border-bottom: 0; }
 td.r, th.r { text-align: right; }
-td.motivo { white-space: normal; min-width: 240px; color: var(--ink-2); }
+td.motivo { white-space: normal; min-width: 200px; color: var(--ink-2); }
+td.solto { white-space: normal; }
+tr.click { cursor: pointer; } tr.click:hover td { background: var(--surface-2); }
 .tk { font-weight: 700; }
-.grp td { background: var(--surface-2); font-weight: 700; color: var(--ink-2); font-size: 12px; padding: 7px 8px; }
+.grp td { background: var(--surface-2); font-weight: 700; color: var(--ink-2); font-size: 12px; padding: 7px; }
 .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
 .chip.buy { background: var(--pos-soft); color: var(--pos); }
 .chip.sell { background: var(--neg-soft); color: var(--neg); }
 .chip.info { background: var(--brand-soft); color: var(--brand); }
 .chip.warn { background: var(--warn-soft); color: var(--warn); }
 .chip.ok { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
-.wbar { position: relative; width: 64px; height: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+.wbar { position: relative; width: 56px; height: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; display: inline-block; vertical-align: middle; margin-right: 8px; }
 .wbar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--brand); }
 .wbar em { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); border-radius: 1px; }
+.alvo { color: var(--muted); font-size: 11.5px; }
 
-/* blocos */
+/* lista de ativos no celular */
+.cards { display: none; list-style: none; margin: 0; padding: 0; }
+.cards li { border-bottom: 1px solid var(--line); }
+.cards li:last-child { border-bottom: 0; }
+.cards li.g { background: var(--surface-2); font-weight: 700; font-size: 12px; color: var(--ink-2); padding: 7px 8px; border-radius: 8px; border: 0; margin-top: 6px; }
+.cards button { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; width: 100%; text-align: left; background: none; border: 0; padding: 10px 4px; cursor: pointer; color: inherit; }
+.cards .l1 { font-weight: 700; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cards .l2 { color: var(--muted); font-size: 12px; grid-column: 1 / -1; }
+.cards .rv { font-weight: 800; text-align: right; }
+
 .blocks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
-.blk { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; background: var(--surface-2); }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.blk { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; background: var(--surface-2); min-width: 0; }
 .blk .lab { font-size: 12px; color: var(--muted); font-weight: 600; }
 .blk .v { font-weight: 800; font-size: 17px; }
 .blk .s { font-size: 12px; color: var(--muted); }
+
+/* fechamento */
+.resumo-dia { display: flex; gap: 8px 16px; flex-wrap: wrap; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-2); margin-bottom: 12px; font-size: 13px; }
+.flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.step { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; background: var(--surface-2); position: relative; }
+.step .nm { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.step .v { font-weight: 800; font-size: 18px; margin-top: 2px; }
+.step .s { font-size: 12px; color: var(--muted); }
+.step:not(:last-child)::after { content: "→"; position: absolute; right: -11px; top: 50%; transform: translateY(-50%); color: var(--dim); font-weight: 700; z-index: 1; }
+.log { margin: 8px 0 0; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px;
+  font: 12px/1.6 ui-monospace, Menlo, Consolas, monospace; color: var(--ink-2); list-style: none; max-height: 220px; overflow: auto; }
+.log li { white-space: pre-wrap; word-break: break-word; }
+.alertas { margin: 0 0 10px; padding: 0; list-style: none; }
+.alertas li { background: var(--warn-soft); border: 1px solid #f3d6a8; color: var(--ink-2); border-radius: 9px; padding: 7px 10px; margin-bottom: 6px; font-size: 12.5px; }
+details summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--brand); margin-top: 10px; }
 
 /* gatilhos */
 .trig { list-style: none; margin: 0; padding: 0; }
@@ -118,52 +161,39 @@ td.motivo { white-space: normal; min-width: 240px; color: var(--ink-2); }
 .trig-h { font-size: 12px; font-weight: 700; color: var(--ink-2); margin: 12px 0 2px; text-transform: uppercase; letter-spacing: .04em; }
 .trig-h:first-child { margin-top: 0; }
 
-/* proventos */
-.bars svg { width: 100%; height: 150px; display: block; }
-.bars .ax { fill: var(--dim); font-size: 10.5px; }
-
-/* regras */
 .rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .rule { border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; }
 .rule b { display: block; margin-bottom: 2px; }
 .rule p { margin: 0; color: var(--muted); font-size: 12.5px; }
-
-/* último fechamento: passo a passo */
-.flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
-.step { border: 1px solid var(--line); border-radius: 11px; padding: 10px 12px; background: var(--surface-2); position: relative; }
-.step .nm { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; display: flex; align-items: center; gap: 6px; }
-.step .v { font-weight: 800; font-size: 18px; margin-top: 2px; }
-.step .s { font-size: 12px; color: var(--muted); }
-.step:not(:last-child)::after { content: "→"; position: absolute; right: -11px; top: 50%; transform: translateY(-50%); color: var(--dim); font-weight: 700; z-index: 1; }
-.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
-.log { margin: 8px 0 0; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px;
-  font: 12px/1.6 ui-monospace, Menlo, Consolas, monospace; color: var(--ink-2); list-style: none; max-height: 220px; overflow: auto; }
-.log li { white-space: pre-wrap; word-break: break-word; }
-.alertas { margin: 0 0 10px; padding: 0; list-style: none; }
-.alertas li { background: var(--warn-soft); border: 1px solid #f3d6a8; color: var(--ink-2); border-radius: 9px; padding: 7px 10px; margin-bottom: 6px; font-size: 12.5px; }
-details summary { cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--brand); }
-select.pick { font: inherit; font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 9px; border: 1px solid var(--line-2); background: var(--surface); color: var(--ink); }
-
 .empty { padding: 26px; text-align: center; color: var(--muted); border: 1px dashed var(--line-2); border-radius: 12px; background: var(--surface-2); }
 .banner { background: var(--brand-soft); border: 1px solid #c9dcfa; color: var(--ink-2); border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 13px; }
 .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.totais { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); margin-bottom: 10px; }
 footer { color: var(--muted); font-size: 12px; margin-top: 24px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 
-@media (max-width: 1080px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (max-width: 860px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .step::after { display: none; }
-  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .two { grid-template-columns: minmax(0, 1fr); } .rules { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 560px) {
-  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .kpi .v { font-size: 19px; }
-  .blocks { grid-template-columns: minmax(0, 1fr); } .brand img { height: 52px; } .brand .t1 { font-size: 18px; }
-  .chart svg { height: 240px; } .card { padding: 14px; }
+@media (max-width: 980px) { .hero { grid-template-columns: repeat(3, minmax(0, 1fr)); } .hero .main { grid-column: 1 / -1; } .hero.idx { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 860px) {
+  .two, .half, .rules { grid-template-columns: minmax(0, 1fr); }
+  .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .step::after { display: none; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+@media (max-width: 640px) {
+  .hero { grid-template-columns: repeat(2, minmax(0, 1fr)); } .hero .main .v { font-size: 28px; }
+  .hero:not(.idx) .kpi:last-child { grid-column: 1 / -1; }
+  .blocks { grid-template-columns: minmax(0, 1fr); } .brand img { height: 48px; } .brand .t1 { font-size: 18px; }
+  .card { padding: 14px; }
+  .so-desk { display: none; } .cards { display: block; }
+  .tabs button { padding: 8px 11px; font-size: 13.5px; }
+  .seg { overflow-x: auto; }
+}
+@media (max-width: 420px) { .tabs div { gap: 0; justify-content: space-between; } .tabs button { padding: 8px 8px; font-size: 13px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <img src="assets/simbolo-argos-b3.png" alt="Símbolo Argos Trade B3" width="64" height="64">
+      <img src="assets/simbolo-argos-b3.png" alt="Símbolo Argos Trade B3" width="60" height="60">
       <div>
         <div class="t1">ARGOS TRADE <b>B3</b></div>
         <div class="t2">Monitor do robô · ações, dividendos e FIIs</div>
@@ -176,17 +206,20 @@ footer { color: var(--muted); font-size: 12px; margin-top: 24px; display: flex; 
     </div>
   </header>
 
-  <div id="app"><div class="empty">Carregando os dados do robô…</div></div>
+  <nav class="tabs" aria-label="Seções do monitor"><div role="tablist" id="tabs"></div></nav>
+  <main id="app"><div class="empty">Carregando os dados do robô…</div></main>
 
   <footer>
-    <span>Regras: <a href="https://github.com/diogo385/argos-trade-b3/blob/main/backtest/ROBO_REGRAS.md">V3 do backtest</a> ·
-      Carteira: <a href="https://github.com/diogo385/argos-trade-b3/blob/main/ANALISE.md">análise de 25/11/2026</a></span>
+    <span>Carteira simulada para estudo. Não é recomendação de investimento.</span>
     <span>Atualiza sozinho a cada 5 minutos · dados do Yahoo Finance e do Banco Central</span>
   </footer>
 </div>
 
 <script>
 "use strict";
+const REPO = "diogo385/argos-trade-b3";
+const MERCADO_URLS = [`https://raw.githubusercontent.com/${REPO}/mercado/mercado.json`, "mercado.json"];
+const ABAS = [["resumo", "Resumo"], ["mercado", "Mercado"], ["historico", "Histórico"], ["extrato", "Extrato"], ["regras", "Regras"]];
 const SERIES = [
   { k: "patrimonio", n: "Robô", c: "var(--s1)", w: 2.6 },
   { k: "carteira_parada", n: "Carteira parada", c: "var(--s2)", w: 2 },
@@ -194,30 +227,37 @@ const SERIES = [
   { k: "ibovespa", n: "Ibovespa", c: "var(--s4)", w: 2 },
   { k: "ifix", n: "IFIX", c: "var(--s5)", w: 2 },
 ];
+const GRUPOS_PADRAO = { valorizacao: ["BPAC11", "ITUB4", "EMBJ3", "PRIO3", "SBSP3", "WEGE3", "CURY3", "GGBR4", "AXIA3", "FLRY3"],
+  dividendos: ["PETR4", "TAEE11", "CPLE3", "CXSE3", "VIVT3"], fiis: ["KNCR11", "BTLG11", "KNRI11", "XPML11", "MCCI11"] };
 const NOMES = { valorizacao: "Valorização", dividendos: "Dividendos", fiis: "FIIs" };
+const INDICES = { IBOV: "Ibovespa (pontos)", BOVA11: "BOVA11 · ETF do Ibovespa", XFIX11: "XFIX11 · ETF do IFIX" };
 const REFORCO_1 = 0.85, REFORCO_2 = 0.75, TETO = 2, CORTE = { dividendos: 0.30, fiis: 0.25 };
-let ativoSel = null;
-let D = null, vis = Object.fromEntries(SERIES.map(s => [s.k, true])), faixa = "tudo", tabela = false, filtroOp = "todas";
+
+let D = null, M = null, aba = "resumo";
+const S = { vis: { patrimonio: true, carteira_parada: true, cdi: true, ibovespa: false, ifix: false }, modo: "reais", faixa: "tudo",
+  ativo: null, ativoDia: null, ordemM: "carteira", fTipo: "todos", fAtivo: "", fMes: "", montagem: false, tabela: false };
 
 // ---------- utilidades
 const brl = (v, c = 2) => "R$ " + Number(v).toLocaleString("pt-BR", { minimumFractionDigits: c, maximumFractionDigits: c });
+const n2 = (v, c = 2) => Number(v).toLocaleString("pt-BR", { minimumFractionDigits: c, maximumFractionDigits: c });
 const pct = (v, c = 1) => (v >= 0 ? "+" : "−") + Math.abs(v * 100).toLocaleString("pt-BR", { minimumFractionDigits: c, maximumFractionDigits: c }) + "%";
+const pc0 = (v, c = 1) => pct(v, c).replace("+", "");
 const sinal = v => v > 0.00001 ? "pos" : v < -0.00001 ? "neg" : "";
+const din = v => (v >= 0 ? "+" : "−") + brl(Math.abs(v));
 const dataBR = s => s ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : "--";
 const curta = s => `${s.slice(8, 10)}/${s.slice(5, 7)}`;
+const mesBR = m => `${["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][+m.slice(5, 7) - 1]}/${m.slice(2, 4)}`;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const el = id => document.getElementById(id);
+const grupos = () => D?.est.grupos || GRUPOS_PADRAO;
 
 function csv(texto) {
-  const linhas = [], cab = [];
+  const linhas = [];
   let campo = "", linha = [], aspas = false;
   for (let i = 0; i < texto.length; i++) {
     const ch = texto[i];
-    if (aspas) {
-      if (ch === '"' && texto[i + 1] === '"') { campo += '"'; i++; }
-      else if (ch === '"') aspas = false;
-      else campo += ch;
-    } else if (ch === '"') aspas = true;
+    if (aspas) { if (ch === '"' && texto[i + 1] === '"') { campo += '"'; i++; } else if (ch === '"') aspas = false; else campo += ch; }
+    else if (ch === '"') aspas = true;
     else if (ch === ";") { linha.push(campo); campo = ""; }
     else if (ch === "\n" || ch === "\r") {
       if (ch === "\r" && texto[i + 1] === "\n") i++;
@@ -231,70 +271,76 @@ function csv(texto) {
   const h = linhas.shift();
   return linhas.map(l => Object.fromEntries(h.map((k, i) => [k, l[i]])));
 }
-
 async function arquivo(nome, json) {
   const r = await fetch(`simulado/${nome}?t=${Date.now()}`, { cache: "no-store" });
   if (!r.ok) return null;
   return json ? r.json() : csv(await r.text());
 }
+async function mercado() {
+  for (const u of MERCADO_URLS) {
+    try { const r = await fetch(`${u}?t=${Date.now()}`, { cache: "no-store" }); if (r.ok) return await r.json(); } catch (e) { /* tenta a próxima */ }
+  }
+  return null;
+}
 
 // ---------- carga
 async function carregar() {
   try {
-    const [est, hist, ops, prov, precos, vetos, ir] = await Promise.all([
+    const [est, hist, ops, prov, precos, vetos, ir, merc] = await Promise.all([
       arquivo("estado.json", true), arquivo("historico.csv"), arquivo("operacoes.csv"), arquivo("proventos.csv"),
-      arquivo("precos.json", true).catch(() => null), arquivo("vetos.csv"), arquivo("ir_mensal.csv")]);
-    if (!est) { vazio(); return; }
-    D = { est, hist: (hist || []).map(h => ({ ...h, ...Object.fromEntries(SERIES.map(s => [s.k, +h[s.k]])), caixa: +h.caixa })),
-          ops: ops || [], prov: prov || [], precos, vetos: vetos || [], ir: ir || [] };
-    desenhar();
+      arquivo("precos.json", true).catch(() => null), arquivo("vetos.csv"), arquivo("ir_mensal.csv"), mercado()]);
+    M = merc;
+    D = est ? { est, hist: (hist || []).map(h => ({ ...h, ...Object.fromEntries(SERIES.map(s => [s.k, +h[s.k]])), caixa: +h.caixa })),
+      ops: ops || [], prov: prov || [], precos, vetos: vetos || [], ir: ir || [] } : null;
+    render();
   } catch (e) {
     el("app").innerHTML = `<div class="empty">Não consegui ler os dados do robô agora (${esc(e.message)}). Tento de novo em 5 minutos.</div>`;
   }
   status();
 }
 
-function vazio() {
-  el("app").innerHTML = `<div class="empty"><b>O robô ainda não rodou.</b><br>A carteira simulada de R$ 6.000 é montada no primeiro
-    fechamento de dia útil, às 18h30 (Brasília). Depois disso, este monitor mostra tudo aqui.</div>`;
-  el("runTxt").textContent = "aguardando o 1º fechamento"; status();
-}
-
+const agoraBR = () => new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+const isoDia = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 function proximaExecucao() {
-  const agora = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-  const d = new Date(agora);
+  const agora = agoraBR(), d = new Date(agora);
   d.setHours(18, 30, 0, 0);
   if (agora >= d) d.setDate(d.getDate() + 1);
   while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
-  const hoje = d.toDateString() === agora.toDateString();
   const dias = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
-  return hoje ? "hoje, 18h30" : `${dias[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}, 18h30`;
+  return d.toDateString() === agora.toDateString() ? "hoje, 18h30"
+    : `${dias[d.getDay()]} ${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}, 18h30`;
 }
-
+// o robô deveria ter fechado o último dia útil (com folga até 20h30); feriado também cai aqui
+function atrasado() {
+  if (!D?.est.ultimo_pregao) return false;
+  const agora = agoraBR(), d = new Date(agora);
+  d.setHours(20, 30, 0, 0);
+  if (agora < d) d.setDate(d.getDate() - 1);
+  while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() - 1);
+  return D.est.ultimo_pregao < isoDia(d);
+}
 function status() {
   el("nextTxt").textContent = "Próxima execução: " + proximaExecucao();
-  if (!D) return;
-  const ult = D.est.ultima_execucao ? new Date(D.est.ultima_execucao) : null;
-  const horas = ult ? (Date.now() - ult) / 36e5 : 99;
-  el("runDot").className = "dot " + (horas < 80 ? "ok" : "late");
-  el("runTxt").textContent = `Último fechamento: ${dataBR(D.est.ultimo_pregao)}` + (horas >= 80 ? " · atrasado" : "");
+  if (!D) { el("runDot").className = "dot"; el("runTxt").textContent = "aguardando o 1º fechamento"; return; }
+  const late = atrasado();
+  el("runDot").className = "dot " + (late ? "late" : "ok");
+  el("runTxt").textContent = `Último fechamento: ${dataBR(D.est.ultimo_pregao)}` + (late ? " · atraso ou feriado" : "");
 }
 
 // ---------- cálculos
 function posicoes() {
   const e = D.est, c = e.carteira, px = e.precos || {};
   const total = c.caixa + Object.entries(c.qtd).reduce((s, [a, q]) => s + q * (px[a] || 0), 0);
-  const alvo = total * (1 - e.reserva / e.capital) / 20;
-  const lin = [];
+  const alvo = total * (1 - e.reserva / e.capital) / 20, lin = [];
   for (const [g, lista] of Object.entries(e.grupos)) for (const a of lista) {
     const q = c.qtd[a] || 0, p = px[a], v = q * p, pm = c.pm[a];
     lin.push({ g, a, q, p, v, pm, peso: v / total, rel: v / alvo, res: pm ? p / pm - 1 : null,
-               fora: e.fora?.[a], ref: e.reforcos?.[a] || 0, alerta: e.alertado?.[a], saude: e.saude_proventos?.[a] });
+      fora: e.fora?.[a], ref: e.reforcos?.[a] || 0, alerta: e.alertado?.[a], saude: e.saude_proventos?.[a] });
   }
   return { total, alvo, lin };
 }
-
-function statusAtivo(x) {
+const gatilhoReforco = x => x.pm && (x.ref || 0) < 2 ? x.pm * (!x.ref ? REFORCO_1 : REFORCO_2 / REFORCO_1) : null;
+function situacao(x) {
   if (x.fora) return `<span class="chip sell">Fora</span>`;
   if (x.alerta) return `<span class="chip warn">⚠ −35% topo</span>`;
   if (x.rel > TETO * 0.9) return `<span class="chip info">Perto do teto</span>`;
@@ -302,360 +348,441 @@ function statusAtivo(x) {
   if (x.pm && x.p <= x.pm * (REFORCO_1 + 0.04)) return `<span class="chip warn">Perto reforço</span>`;
   return `<span class="chip ok">Normal</span>`;
 }
+function recorte(h) {
+  if (S.faixa === "tudo" || !h.length) return h;
+  const fim = new Date(h[h.length - 1].data), ini = new Date(fim);
+  ini.setMonth(ini.getMonth() - (S.faixa === "1m" ? 1 : 3));
+  const r = h.filter(x => new Date(x.data) >= ini);
+  return r.length >= 2 ? r : h.slice(-2);
+}
 
-// ---------- desenho
-function desenhar() {
-  const e = D.est, c = e.carteira, { total, alvo, lin } = posicoes();
-  const h = D.hist, ult = h[h.length - 1] || {};
-  const ini = e.capital;
-  const provTotal = D.prov.reduce((s, p) => s + +p.total, 0);
-  const vsCdi = ult.cdi ? total - ult.cdi : 0, vsPar = ult.carteira_parada ? total - ult.carteira_parada : 0;
-  const reservaAlvo = total * e.reserva / e.capital;
-  const nOps = D.ops.filter(o => o.motivo !== "montagem inicial").length;
+// ---------- gráfico de linhas genérico (cruz, dica, rótulos diretos e linhas de referência)
+function linhas(boxId, o) {
+  const box = el(boxId);
+  if (!box) return;
+  const n = o.rotulos.length;
+  if (n < 2) { box.innerHTML = `<div class="empty">${o.vazio || "O gráfico aparece a partir do segundo ponto."}</div>`; return; }
+  const W = box.clientWidth || 800, estreito = W < 560, H = o.altura || (window.innerWidth <= 640 ? 230 : 290);
+  const m = { l: 58, r: estreito ? 12 : 104, t: 10, b: 26 }, refs = o.refs || [];
+  const vals = o.series.flatMap(s => s.v).concat(refs.map(r => r.v)).filter(v => v != null && isFinite(v));
+  if (!vals.length) { box.innerHTML = `<div class="empty">Escolha ao menos uma série na legenda.</div>`; return; }
+  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.08 || Math.abs(hi) * 0.01 || 1; lo -= pad; hi += pad;
+  const X = i => m.l + i * (W - m.l - m.r) / (n - 1), Y = v => m.t + (hi - v) * (H - m.t - m.b) / (hi - lo);
+  const ty = Array.from({ length: 5 }, (_, i) => lo + (hi - lo) * i / 4), nx = Math.min(estreito ? 4 : 6, n);
+  const tx = Array.from({ length: nx }, (_, i) => Math.round(i * (n - 1) / (nx - 1)));
+  const caminho = v => { let d = "", on = false; v.forEach((y, i) => { if (y == null) { on = false; return; } d += `${on ? "L" : "M"}${X(i).toFixed(1)},${Y(y).toFixed(1)}`; on = true; }); return d; };
+  let svg = `<svg viewBox="0 0 ${W} ${H}" style="height:${H}px" role="img" aria-label="${esc(o.titulo)}">`;
+  svg += ty.map(v => `<line class="grid-l" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="ax num" x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${o.eixo(v)}</text>`).join("");
+  svg += tx.map(i => `<text class="ax num" x="${X(i)}" y="${H - 6}" text-anchor="middle">${esc(o.rotulos[i])}</text>`).join("");
+  const fins = o.series.map(s => { let i = s.v.length - 1; while (i >= 0 && s.v[i] == null) i--; return i < 0 ? null : { n: s.n, c: s.c, y: Y(s.v[i]), y0: Y(s.v[i]), x: X(i), forte: s.w > 2.2, ponto: true }; }).filter(Boolean)
+    .concat(refs.map(r => ({ n: r.n, c: r.c, y: Y(r.v), y0: Y(r.v), ponto: false }))).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < fins.length; i++) if (fins[i].y - fins[i - 1].y < 14) fins[i].y = fins[i - 1].y + 14;
+  svg += refs.map(r => `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(r.v)}" y2="${Y(r.v)}" stroke="${r.c}" stroke-width="1.5" stroke-dasharray="5 4"/>`).join("");
+  svg += o.series.slice().sort((a, b) => a.w - b.w).map(s => `<path d="${caminho(s.v)}" fill="none" stroke="${s.c}" stroke-width="${s.w}" stroke-linejoin="round" stroke-linecap="round"/>`).join("");
+  svg += fins.map(f => (f.ponto ? `<circle cx="${f.x}" cy="${f.y0}" r="4" fill="${f.c}" stroke="var(--surface)" stroke-width="2"/>` : "") +
+    (estreito ? "" : `<text x="${W - m.r + 10}" y="${f.y + 4}" font-size="11.5" fill="var(--ink-2)" font-weight="${f.forte ? 700 : 500}">${esc(f.n)}</text>`)).join("");
+  svg += `<line class="cx" y1="${m.t}" y2="${H - m.b}" stroke="var(--dim)" visibility="hidden"/><g class="hd"></g>
+    <rect class="hit" x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent"/></svg><div class="tip"></div>`;
+  box.innerHTML = svg;
+  const hit = box.querySelector(".hit"), tip = box.querySelector(".tip"), cross = box.querySelector(".cx"), dots = box.querySelector(".hd");
+  const mover = ev => {
+    const r = box.querySelector("svg").getBoundingClientRect(), sx = W / r.width;
+    const px = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) * sx;
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - m.l) / ((W - m.l - m.r) / (n - 1)))));
+    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("visibility", "visible");
+    const vivos = o.series.filter(s => s.v[i] != null);
+    dots.innerHTML = vivos.map(s => `<circle cx="${X(i)}" cy="${Y(s.v[i])}" r="4.5" fill="${s.c}" stroke="var(--surface)" stroke-width="2"/>`).join("");
+    tip.innerHTML = `<div class="d">${esc(o.dica ? o.dica(i) : o.rotulos[i])}</div>` + vivos.slice().sort((a, b) => b.v[i] - a.v[i]).map(s =>
+      `<div class="r"><span><i style="background:${s.c}"></i>${esc(s.n)}</span><b class="num">${o.valor(s.v[i])}</b></div>`).join("") + (o.extra ? o.extra(i) : "");
+    tip.style.display = "block";
+    const left = X(i) / sx, w = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(r.width - w, left + (left > r.width / 2 ? -w - 14 : 14))) + "px"; tip.style.top = "10px";
+  };
+  const sair = () => { tip.style.display = "none"; cross.setAttribute("visibility", "hidden"); dots.innerHTML = ""; };
+  hit.addEventListener("mousemove", mover); hit.addEventListener("touchmove", mover, { passive: true });
+  hit.addEventListener("mouseleave", sair); hit.addEventListener("touchend", sair);
+}
+const segFaixa = () => `<div class="seg" role="group" aria-label="Período">${["1m", "3m", "tudo"].map(f =>
+  `<button type="button" data-faixa="${f}" aria-pressed="${S.faixa === f}">${f === "tudo" ? "Tudo" : f.toUpperCase()}</button>`).join("")}</div>`;
+const selAtivo = (id, atual) => `<select class="pick" id="${id}" aria-label="Escolher ativo">${Object.entries(grupos()).map(([g, l]) =>
+  `<optgroup label="${NOMES[g]}">${l.map(a => `<option value="${a}" ${a === atual ? "selected" : ""}>${a}</option>`).join("")}</optgroup>`).join("")}</select>`;
+const vazio = () => `<div class="empty"><b>O robô ainda não rodou.</b><br>A carteira simulada de R$ 6.000 é montada no primeiro fechamento de dia útil,
+  às 18h30 (Brasília). Enquanto isso, a aba <b>Mercado</b> mostra as cotações do dia e a aba <b>Regras</b> explica como ele decide.</div>`;
+const tile = (lab, v, s, cls = "") => `<div class="blk"><div class="lab">${lab}</div><div class="v num ${cls}">${v}</div><div class="s num">${s}</div></div>`;
 
-  if (!ativoSel) ativoSel = (lin.filter(x => x.q && x.pm).sort((a, b) => a.p / a.pm - b.p / b.pm)[0] || lin[0]).a;
-  const blocos = Object.keys(e.grupos).map(g => {
-    const ls = lin.filter(x => x.g === g), v = ls.reduce((s, x) => s + x.v, 0);
-    const custo = ls.reduce((s, x) => s + (x.pm ? x.q * x.pm : 0), 0);
-    return { g, v, peso: v / total, res: custo ? v / custo - 1 : 0, n: ls.filter(x => x.q).length, tot: ls.length };
-  });
+// =====================================================================  RESUMO
+function tResumo() {
+  if (!D) return vazio();
+  const e = D.est, c = e.carteira, { total, alvo, lin } = posicoes(), h = D.hist, ult = h[h.length - 1] || {}, ini = e.capital;
+  const provTotal = D.prov.reduce((s, p) => s + +p.total, 0), vsCdi = ult.cdi ? total - ult.cdi : 0, vsPar = ult.carteira_parada ? total - ult.carteira_parada : 0;
+  const dias = Math.round((new Date(e.ultimo_pregao) - new Date(e.inicio)) / 864e5);
+  const blocos = Object.keys(e.grupos).map(g => { const ls = lin.filter(x => x.g === g), v = ls.reduce((s, x) => s + x.v, 0), custo = ls.reduce((s, x) => s + (x.pm ? x.q * x.pm : 0), 0);
+    return { g, v, peso: v / total, res: custo ? v / custo - 1 : 0, n: ls.filter(x => x.q).length, tot: ls.length }; });
+  return `
+  ${e.inicio === e.ultimo_pregao ? `<div class="banner">Carteira montada em ${dataBR(e.inicio)}. Os gráficos ganham forma a partir dos próximos fechamentos.</div>` : ""}
+  <section class="hero">
+    <div class="card main"><div class="kpi"><div class="lab">Patrimônio no fechamento de ${dataBR(e.ultimo_pregao)}</div></div>
+      <div class="v num">${brl(total)}</div>
+      <div class="r num ${sinal(total - ini)}">${pct(total / ini - 1)} · ${din(total - ini)}</div>
+      <div class="kpi"><div class="s num">desde ${dataBR(e.inicio)} (${dias} dias) · início com ${brl(ini, 0)}</div></div></div>
+    <div class="card kpi"><div class="lab">Contra o CDI</div><div class="v num ${sinal(vsCdi)}">${din(vsCdi)}</div><div class="s num">o CDI líquido teria ${brl(ult.cdi || ini)}</div></div>
+    <div class="card kpi"><div class="lab">Contra a carteira parada</div><div class="v num ${sinal(vsPar)}">${din(vsPar)}</div><div class="s num">mesmos ativos, sem o robô agir</div></div>
+    <div class="card kpi"><div class="lab">Proventos recebidos</div><div class="v num">${brl(provTotal)}</div><div class="s num">${D.prov.length} pagamentos desde o início</div></div>
+  </section>
 
-  el("app").innerHTML = `
-  ${e.inicio === e.ultimo_pregao ? `<div class="banner">Carteira montada hoje (${dataBR(e.inicio)}). Os gráficos ganham forma a partir dos próximos fechamentos.</div>` : ""}
-  <section class="grid kpis">
-    ${kpi("Patrimônio", brl(total), `início ${brl(ini, 0)} em ${dataBR(e.inicio)}`)}
-    ${kpi("Resultado", `<span class="${sinal(total - ini)}">${pct(total / ini - 1)}</span>`, `<span class="${sinal(total - ini)}">${(total >= ini ? "+" : "−") + brl(Math.abs(total - ini))}</span>`)}
-    ${kpi("Contra o CDI", `<span class="${sinal(vsCdi)}">${(vsCdi >= 0 ? "+" : "−") + brl(Math.abs(vsCdi))}</span>`, `CDI líquido: ${brl(ult.cdi || ini)}`)}
-    ${kpi("Contra a carteira parada", `<span class="${sinal(vsPar)}">${(vsPar >= 0 ? "+" : "−") + brl(Math.abs(vsPar))}</span>`, `${nOps} ${nOps === 1 ? "operação" : "operações"} do robô`)}
-    ${kpi("Proventos recebidos", brl(provTotal), `${D.prov.length} pagamentos · IR pago ${brl(c.ir_pago)}`)}
-    ${kpi("Reserva em caixa", brl(c.caixa), `alvo de ${brl(reservaAlvo, 0)} · rende CDI`)}
+  <section class="card full">
+    <div class="chart-head">
+      <div><h2>Robô contra as referências</h2><p class="sub">Todas começam com ${brl(ini, 0)} no mesmo dia. Toque na legenda para ligar ou desligar Ibovespa e IFIX.</p></div>
+      <div class="ctrls"><div class="seg" role="group" aria-label="Unidade">
+        <button type="button" data-modo="reais" aria-pressed="${S.modo === "reais"}">R$</button><button type="button" data-modo="pct" aria-pressed="${S.modo === "pct"}">%</button></div>${segFaixa()}</div>
+    </div>
+    <div class="legend">${SERIES.map(s => `<button type="button" data-serie="${s.k}" aria-pressed="${S.vis[s.k]}"><i style="background:${s.c}"></i>${s.n}</button>`).join("")}</div>
+    <div class="chart" id="gPat"></div>
   </section>
 
   ${fechamento(lin)}
 
-  <section class="card full">
-    <div class="chart-head">
-      <div><h2>Patrimônio contra as referências</h2><p class="sub">Todas começam com ${brl(ini, 0)} no mesmo dia. Valores no fechamento de cada pregão.</p></div>
-      <div class="seg" role="group" aria-label="Período">
-        ${["1m", "3m", "tudo"].map(f => `<button type="button" data-f="${f}" aria-pressed="${faixa === f}">${f === "tudo" ? "Tudo" : f.toUpperCase()}</button>`).join("")}
-      </div>
-    </div>
-    <div class="legend" id="legend">${SERIES.map(s => `<button type="button" data-k="${s.k}" aria-pressed="${vis[s.k]}"><i style="background:${s.c}"></i>${s.n}</button>`).join("")}</div>
-    <div class="chart" id="chart"></div>
-    <button type="button" class="linkbtn" id="tblBtn">${tabela ? "Esconder tabela" : "Ver em tabela"}</button>
-    <div id="tblHist"></div>
-  </section>
-
   <section class="grid two">
     <div class="card">
-      <h2>Carteira</h2><p class="sub">Alvo por ativo: ${brl(alvo)} (cerca de 4,2% do patrimônio; o resto é a reserva). A barra mostra o peso; o traço é o alvo.</p>
+      <h2>Carteira</h2><p class="sub">Toque em um ativo para ver o histórico dele. Reserva em caixa: <b class="num">${brl(c.caixa)}</b> (${pc0(c.caixa / total)}), rendendo CDI.</p>
       <div class="blocks">${blocos.map(b => `<div class="blk"><div class="lab">${NOMES[b.g]} · ${b.n}/${b.tot} ativos</div>
-        <div class="v num">${brl(b.v, 0)}</div><div class="s num">${pct(b.peso, 0).replace("+", "")} da carteira · <span class="${sinal(b.res)}">${pct(b.res)}</span></div></div>`).join("")}</div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Ativo</th><th class="r">Qtd</th><th class="r">P. médio</th><th class="r">Preço</th><th class="r">Valor</th><th>Peso</th><th class="r">Resultado</th><th>Situação</th></tr></thead>
-        <tbody>${Object.keys(e.grupos).map(g => `<tr class="grp"><td colspan="8">${NOMES[g]}</td></tr>` +
-          lin.filter(x => x.g === g).map(x => `<tr>
-            <td class="tk">${x.a}</td><td class="r num">${x.q}</td><td class="r num">${x.pm ? brl(x.pm) : "—"}</td>
-            <td class="r num">${x.p ? brl(x.p) : "—"}</td><td class="r num">${brl(x.v)}</td>
-            <td class="num"><span class="wbar" title="peso ${pct(x.peso).replace("+", "")} · alvo ${pct(alvo / total).replace("+", "")}"><span style="width:${Math.min(100, x.rel * 40)}%"></span><em style="left:40%"></em></span>${pct(x.peso).replace("+", "")}</td>
-            <td class="r num ${x.res == null ? "" : sinal(x.res)}">${x.res == null ? "—" : pct(x.res)}</td><td>${statusAtivo(x)}</td></tr>`).join("")).join("")}
-          <tr class="grp"><td colspan="4">Reserva (CDI)</td><td class="r num">${brl(c.caixa)}</td><td class="num" colspan="3">${pct(c.caixa / total).replace("+", "")}</td></tr>
-        </tbody></table></div>
+        <div class="v num">${brl(b.v, 0)}</div><div class="s num">${pc0(b.peso, 0)} da carteira · <span class="${sinal(b.res)}">${pct(b.res)}</span></div></div>`).join("")}</div>
+      <div class="tbl-wrap so-desk"><table>
+        <thead><tr><th>Ativo</th><th class="r">Qtd</th><th class="r">P. médio</th><th class="r">Preço</th><th class="r">Valor</th><th>Peso (alvo ${pc0(alvo / total)})</th><th class="r">Resultado</th><th>Situação</th></tr></thead>
+        <tbody>${Object.keys(e.grupos).map(g => `<tr class="grp"><td colspan="8">${NOMES[g]}</td></tr>` + lin.filter(x => x.g === g).map(x => `<tr class="click" data-ativo="${x.a}" tabindex="0">
+          <td class="tk">${x.a}</td><td class="r num">${x.q}</td><td class="r num">${x.pm ? brl(x.pm) : "—"}</td><td class="r num">${x.p ? brl(x.p) : "—"}</td><td class="r num">${brl(x.v)}</td>
+          <td class="num"><span class="wbar" aria-hidden="true"><span style="width:${Math.min(100, x.rel * 40)}%"></span><em style="left:40%"></em></span>${pc0(x.peso)}</td>
+          <td class="r num ${x.res == null ? "" : sinal(x.res)}">${x.res == null ? "—" : pct(x.res)}</td><td>${situacao(x)}</td></tr>`).join("")).join("")}</tbody></table></div>
+      <ul class="cards">${Object.keys(e.grupos).map(g => `<li class="g">${NOMES[g]}</li>` + lin.filter(x => x.g === g).map(x => `<li><button type="button" data-ativo="${x.a}">
+          <span class="l1">${x.a} ${situacao(x)}</span><span class="rv num ${x.res == null ? "" : sinal(x.res)}">${x.res == null ? "—" : pct(x.res)}</span>
+          <span class="l2 num">${x.q} × ${x.p ? brl(x.p) : "—"} = ${brl(x.v)} · peso ${pc0(x.peso)} (alvo ${pc0(alvo / total)}) · médio ${x.pm ? brl(x.pm) : "—"}</span></button></li>`).join("")).join("")}</ul>
     </div>
     <div class="card">
-      <h2>Gatilhos do robô</h2><p class="sub">O que está mais perto de fazer o robô agir no próximo fechamento.</p>
+      <h2>Gatilhos do robô</h2><p class="sub">Barra cheia = o robô age no próximo fechamento.</p>
       ${gatilhos(lin)}
     </div>
-  </section>
-
-  <section class="card full">
-    <div class="chart-head">
-      <div><h2>Preço e gatilhos por ativo</h2><p class="sub">Fechamento diário dos últimos 6 meses, com as linhas que fazem o robô agir.</p></div>
-      <select class="pick" id="pick" aria-label="Escolher ativo">${Object.entries(e.grupos).map(([g, l]) =>
-        `<optgroup label="${NOMES[g]}">${l.map(a => `<option value="${a}" ${a === ativoSel ? "selected" : ""}>${a}</option>`).join("")}</optgroup>`).join("")}</select>
-    </div>
-    <div class="legend" id="legAtivo"></div>
-    <div class="chart" id="chartAtivo"></div>
-  </section>
-
-  <section class="grid two">
-    <div class="card">
-      <h2>Diário de operações</h2><p class="sub">Cada decisão do robô com o motivo. Montagem inicial incluída.</p>
-      <div class="filters"><div class="seg" role="group" aria-label="Filtrar operações">
-        ${[["todas", "Todas"], ["COMPRA", "Compras"], ["VENDA", "Vendas"]].map(([k, n]) => `<button type="button" data-op="${k}" aria-pressed="${filtroOp === k}">${n}</button>`).join("")}
-      </div><span class="sub" style="margin:0">${D.ops.length} registros</span></div>
-      <div class="tbl-wrap" style="max-height:420px;overflow:auto">${diario()}</div>
-    </div>
-    <div class="card">
-      <h2>Proventos por mês</h2><p class="sub">Dividendos, JCP e rendimentos de FIIs creditados na carteira do robô.</p>
-      <div class="bars" id="bars"></div>
-      <div class="tbl-wrap" style="max-height:220px;overflow:auto;margin-top:8px">${provLista()}</div>
-    </div>
-  </section>
-
-  <section class="grid two">
-    <div class="card">
-      <h2>Porteiro de risco</h2><p class="sub">Toda ordem passa por estas travas antes de ser executada. Vetos ficam registrados.</p>
-      <div class="tbl-wrap"><table><tbody>
-        <tr><td>Valor por ordem</td><td class="r num">até ${((e.travas?.ordem_max ?? .15) * 100).toFixed(0)}% do patrimônio</td></tr>
-        <tr><td>Operações por dia</td><td class="r num">até ${e.travas?.max_ops_dia ?? 8} (fora do rebalanceamento)</td></tr>
-        <tr><td>Cotação que não é do dia</td><td class="r">não opera no ativo</td></tr>
-        <tr><td>Salto acima de ${((e.travas?.salto_suspeito ?? .25) * 100).toFixed(0)}% sem desdobramento</td><td class="r">dado suspeito: não opera</td></tr>
-        <tr><td>Movimento acima de ${((e.travas?.vol_max_dia ?? .10) * 100).toFixed(0)}% no dia</td><td class="r">não opera no ativo</td></tr>
-        <tr><td>Compra e venda do mesmo ativo no dia</td><td class="r">proibido (sem day trade)</td></tr>
-        <tr><td>Vendas de ações no mês</td><td class="r num">trava em ${brl(e.travas?.vendas_mes_limite ?? 19000, 0)} (isenção de IR)</td></tr>
-        <tr><td>Caixa ou quantidade negativa</td><td class="r">para tudo e avisa</td></tr>
-      </tbody></table></div>
-      <h2 style="margin-top:14px">Vetos registrados <span class="sub">· ${D.vetos.length}</span></h2>
-      <div class="tbl-wrap" style="max-height:220px;overflow:auto">${vetosLista()}</div>
-    </div>
-    <div class="card">
-      <h2>Imposto de renda (simulado)</h2><p class="sub">Apuração mensal das vendas de ações e FIIs. Ações ficam isentas com vendas até R$ 20 mil no mês; FIIs pagam 20% sobre o lucro.</p>
-      <div class="tbl-wrap" style="max-height:330px;overflow:auto">${irLista()}</div>
-    </div>
-  </section>
-
-  <section class="card full">
-    <h2>Regras em vigor</h2><p class="sub">Versão V3 do backtest. O robô decide sozinho; nenhuma regra é afrouxada por ele.</p>
-    <div class="rules">
-      <div class="rule"><b>🟢 Reforço nas quedas</b><p>Ativo 15% abaixo do preço médio → compra mais ~R$ 250 com a reserva. Segundo reforço com mais ~12% de queda. Até 2 por mês, nenhum ativo acima de 2× o alvo e só com proventos em dia.</p></div>
-      <div class="rule"><b>🔵 Realização de lucro</b><p>Posição acima de 2× o alvo volta para o alvo. No primeiro pregão de cada trimestre, o robô rebalanceia tudo (FIIs só recebem compras).</p></div>
-      <div class="rule"><b>🔴 Saída por tese</b><p>Ação de dividendos com proventos −30% em 12 meses, ou FII com −25%: vende tudo e volta quando os proventos se recuperam. Queda de 35% do topo só gera alerta.</p></div>
-    </div>
   </section>`;
-
-  grafico(); barras(); graficoAtivo(lin);
-  el("pick").onchange = ev => { ativoSel = ev.target.value; graficoAtivo(lin); };
-  document.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { faixa = b.dataset.f; desenhar(); });
-  document.querySelectorAll("[data-k]").forEach(b => b.onclick = () => { vis[b.dataset.k] = !vis[b.dataset.k]; desenhar(); });
-  document.querySelectorAll("[data-op]").forEach(b => b.onclick = () => { filtroOp = b.dataset.op; desenhar(); });
-  el("tblBtn").onclick = () => { tabela = !tabela; desenhar(); };
-  status();
 }
-
-const kpi = (lab, v, s) => `<div class="card kpi"><div class="lab">${lab}</div><div class="v num">${v}</div><div class="s num">${s}</div></div>`;
-
-function gatilhos(lin) {
-  const ativos = lin.filter(x => x.q && x.pm && !x.fora);
-  const reforco = ativos.map(x => {
-    const gat = x.ref === 0 ? REFORCO_1 : x.ref === 1 ? REFORCO_2 : null;
-    return gat ? { ...x, falta: x.p / (x.pm * (x.ref === 0 ? REFORCO_1 : REFORCO_2 / REFORCO_1 * 1)) - 1 } : null;
-  }).filter(Boolean).sort((a, b) => a.falta - b.falta).slice(0, 5);
-  const lucro = ativos.slice().sort((a, b) => b.rel - a.rel).slice(0, 4);
-  const saude = lin.filter(x => x.g !== "valorizacao").filter(x => x.saude != null).sort((a, b) => a.saude - b.saude).slice(0, 5);
-  const item = (tk, prog, txt, val) => `<li><span class="tk">${tk}</span><div><div class="bar"><span style="width:${Math.max(2, Math.min(100, prog * 100))}%"></span></div><div class="txt">${txt}</div></div><span class="val num">${val}</span></li>`;
-  return `
-    <div class="trig-h">Reforço (queda até o gatilho)</div>
-    <ul class="trig">${reforco.length ? reforco.map(x => item(x.a, 1 - Math.max(0, x.falta) / 0.2,
-      `${x.ref ? "2º" : "1º"} reforço se cair a ${brl(x.pm * (x.ref ? REFORCO_2 / REFORCO_1 : REFORCO_1))}`,
-      x.falta <= 0 ? "no gatilho" : "faltam " + pct(-x.falta).replace("−", ""))).join("") : `<li><span></span><span class="txt">Nenhum ativo elegível.</span><span></span></li>`}</ul>
-    <div class="trig-h">Realização de lucro (peso ÷ alvo)</div>
-    <ul class="trig">${lucro.map(x => item(x.a, x.rel / TETO, `vende o excesso quando chegar a 2× o alvo`, x.rel.toFixed(2).replace(".", ",") + "×")).join("")}</ul>
-    <div class="trig-h">Saúde dos proventos (12 meses vs anteriores)</div>
-    <ul class="trig">${saude.length ? saude.map(x => item(x.a, Math.max(0, Math.min(1, (x.saude + CORTE[x.g]) / (CORTE[x.g] * 2))),
-      `sai se cair mais de ${CORTE[x.g] * 100}%`, `<span class="${sinal(x.saude)}">${pct(x.saude, 0)}</span>`)).join("") : `<li><span></span><span class="txt">Sem histórico suficiente ainda.</span><span></span></li>`}</ul>`;
+function dResumo() {
+  const h = recorte(D.hist), ss = SERIES.filter(s => S.vis[s.k]), base = h[0] || {};
+  const val = (x, k) => S.modo === "pct" ? x[k] / base[k] - 1 : x[k];
+  linhas("gPat", { titulo: "Patrimônio do robô e das referências ao longo do tempo", rotulos: h.map(x => curta(x.data)), dica: i => dataBR(h[i].data),
+    series: ss.map(s => ({ n: s.n, c: s.c, w: s.w, v: h.map(x => val(x, s.k)) })),
+    eixo: v => S.modo === "pct" ? pct(v, 1) : n2(v, 0), valor: v => S.modo === "pct" ? pct(v, 2) : brl(v),
+    vazio: "O gráfico aparece a partir do segundo fechamento." + (h.length ? ` Hoje: robô ${brl(h[0].patrimonio)}.` : "") });
 }
 
 function fechamento(lin) {
   const e = D.est, f = e.fechamento, c = e.carteira;
   if (!f) return "";
-  const col = f.coletor || {}, prob = [...(col.velhos || []), ...(col.suspeitos || [])];
-  const ult = D.ops[D.ops.length - 1];
-  const perto = lin.filter(x => x.q && x.pm && !x.fora).map(x => ({ a: x.a, d: x.p / (x.pm * REFORCO_1) - 1 })).sort((a, b) => a.d - b.d)[0];
-  const horas = e.ultima_execucao ? (Date.now() - new Date(e.ultima_execucao)) / 36e5 : null;
-  const tel = f.telegram === "enviado";
-  const passo = (ic, nm, v, s, cls = "") => `<div class="step"><div class="nm">${ic} ${nm}</div><div class="v num ${cls}">${v}</div><div class="s">${s}</div></div>`;
-  const tile = (lab, v, s) => `<div class="blk"><div class="lab">${lab}</div><div class="v num">${v}</div><div class="s num">${s}</div></div>`;
+  const col = f.coletor || {}, prob = [...(col.velhos || []), ...(col.suspeitos || [])], tel = f.telegram === "enviado";
+  const ult = D.ops[D.ops.length - 1], late = atrasado();
+  const perto = lin.filter(x => x.q && gatilhoReforco(x) && !x.fora).map(x => ({ a: x.a, d: x.p / gatilhoReforco(x) - 1 })).sort((a, b) => a.d - b.d)[0];
+  const quando = e.ultima_execucao ? `${curta(e.ultima_execucao.slice(0, 10))} às ${e.ultima_execucao.slice(11, 16)}` : "--";
+  const calmo = !f.operacoes && !f.vetos.length && !prob.length && tel;
+  const passo = (nm, v, s, cls = "") => `<div class="step"><div class="nm">${nm}</div><div class="v num ${cls}">${v}</div><div class="s">${s}</div></div>`;
   return `<section class="card full">
-    <h2>Último fechamento · ${dataBR(f.data)}</h2><p class="sub">O caminho de cada decisão: coletor → estratégia → porteiro de risco → executor → avisos.</p>
-    <div class="flow">
-      ${passo("◉", "Coletor", `${col.ok ?? "--"}/${col.total ?? 20}`, prob.length ? `sem dado confiável: ${prob.join(", ")}` : "cotações do dia conferidas" + (f.cdi_ok === false ? " · CDI estimado" : ""), prob.length ? "neg" : "")}
-      ${passo("≈", "Estratégia", f.propostas, f.propostas === 1 ? "ordem proposta" : "ordens propostas")}
-      ${passo("⛨", "Porteiro", `${f.aprovadas} <span style="font-weight:500;color:var(--muted)">/</span> ${f.vetos.length}`, "aprovadas / vetadas", f.vetos.length ? "neg" : "")}
-      ${passo("⇄", "Executor", f.operacoes, f.operacoes === 1 ? "operação executada" : "operações executadas")}
-      ${passo("✈", "Telegram", tel ? "Enviado" : "Falhou", tel ? "resumo do dia entregue" : "mensagem não entregue", tel ? "pos" : "neg")}
-    </div>
-    <div class="tiles">
-      ${tile("Sinal de vida", horas == null ? "--" : horas < 1 ? "agora há pouco" : horas < 48 ? `há ${Math.round(horas)} h` : `há ${Math.round(horas / 24)} dias`, "conferido às 20h30 nos dias úteis")}
-      ${tile("Última operação", ult ? `${ult.tipo === "COMPRA" ? "Compra" : "Venda"} ${esc(ult.ativo)}` : "—", ult ? `${dataBR(ult.data)} · ${brl(+ult.valor)}` : "nenhuma ainda")}
-      ${tile("Mais perto de agir", perto ? perto.a : "—", perto ? (perto.d <= 0 ? "no gatilho de reforço" : `faltam ${pct(-perto.d).replace("−", "")} para o reforço`) : "")}
-      ${tile("Custos e IR pagos", brl(c.custos + c.ir_pago), `custos ${brl(c.custos)} · IR ${brl(c.ir_pago)}`)}
-    </div>
+    <h2>Último fechamento · ${dataBR(f.data)}</h2><p class="sub">Coletor → estratégia → porteiro de risco → executor → Telegram.</p>
+    ${calmo ? `<div class="resumo-dia"><span>✅ <b>Dia sem operação.</b></span><span>${col.ok}/${col.total} cotações conferidas</span><span>nenhum gatilho atingido</span><span>resumo enviado no Telegram</span>${f.proventos ? `<span>${f.proventos} proventos creditados</span>` : ""}</div>`
+    : `<div class="flow">
+      ${passo("Coletor", `${col.ok ?? "--"}/${col.total ?? 20}`, prob.length ? `sem dado confiável: ${prob.join(", ")}` : "cotações do dia conferidas", prob.length ? "neg" : "")}
+      ${passo("Estratégia", f.propostas, f.propostas === 1 ? "ordem proposta" : "ordens propostas")}
+      ${passo("Porteiro", `${f.aprovadas} / ${f.vetos.length}`, "aprovadas / vetadas", f.vetos.length ? "neg" : "")}
+      ${passo("Executor", f.operacoes, f.operacoes === 1 ? "operação executada" : "operações executadas")}
+      ${passo("Telegram", tel ? "Enviado" : "Falhou", tel ? "resumo do dia entregue" : "mensagem não entregue", tel ? "pos" : "neg")}
+    </div>`}
     ${f.alertas?.length ? `<ul class="alertas">${f.alertas.map(a => `<li>${esc(a)}</li>`).join("")}</ul>` : ""}
     ${f.vetos.length ? `<ul class="alertas">${f.vetos.map(v => `<li>⏸️ Porteiro vetou ${v.tipo.toLowerCase()} de <b>${esc(v.ativo)}</b> (${brl(v.valor)}): ${esc(v.trava)}</li>`).join("")}</ul>` : ""}
+    <div class="tiles">
+      ${tile("Última execução do robô", quando, late ? "sem fechamento no último dia útil (atraso ou feriado)" : "em dia · sinal de vida confere às 20h30", late ? "neg" : "")}
+      ${tile("Última operação", ult ? `${ult.tipo === "COMPRA" ? "Compra" : "Venda"} ${esc(ult.ativo)}` : "—", ult ? `${dataBR(ult.data)} · ${brl(+ult.valor)}` : "nenhuma ainda")}
+      ${tile("Mais perto de agir", perto ? perto.a : "—", perto ? (perto.d <= 0 ? "no gatilho de reforço" : `falta cair ${pc0(perto.d)} para o reforço`) : "")}
+      ${tile("Custos e IR pagos", brl(c.custos + c.ir_pago), `custos ${brl(c.custos)} · IR ${brl(c.ir_pago)}`)}
+    </div>
     <details><summary>Ver o registro completo do fechamento</summary><ul class="log">${(f.registro || []).map(l => `<li>${esc(l)}</li>`).join("")}</ul></details>
   </section>`;
 }
 
-function vetosLista() {
-  if (!D.vetos.length) return `<div class="empty">Nenhum veto até agora.</div>`;
-  return `<table><thead><tr><th>Data</th><th>Ordem</th><th class="r">Valor</th><th>Trava</th></tr></thead><tbody>
-    ${D.vetos.slice().reverse().map(v => `<tr><td class="num">${dataBR(v.data)}</td><td><span class="chip ${v.tipo === "COMPRA" ? "buy" : "sell"}">${v.tipo === "COMPRA" ? "Compra" : "Venda"}</span> <span class="tk">${esc(v.ativo)}</span></td>
-      <td class="r num">${brl(+v.valor)}</td><td class="motivo">${esc(v.trava)}</td></tr>`).join("")}</tbody></table>`;
+function gatilhos(lin) {
+  const ativos = lin.filter(x => x.q && x.pm && !x.fora);
+  const reforco = ativos.filter(gatilhoReforco).map(x => ({ ...x, gat: gatilhoReforco(x), falta: x.p / gatilhoReforco(x) - 1 })).sort((a, b) => a.falta - b.falta).slice(0, 5);
+  const lucro = ativos.slice().sort((a, b) => b.rel - a.rel).slice(0, 4);
+  // proventos: distância até o corte (0 = estável ou subindo, 1 = no corte)
+  const saude = lin.filter(x => x.g !== "valorizacao" && x.saude != null).map(x => ({ ...x, perto: Math.max(0, Math.min(1, -x.saude / CORTE[x.g])) })).sort((a, b) => b.perto - a.perto).slice(0, 5);
+  const item = (tk, prog, txt, val) => `<li><span class="tk">${tk}</span><div><div class="bar" aria-hidden="true"><span style="width:${Math.max(2, Math.min(100, prog * 100))}%"></span></div><div class="txt">${txt}</div></div><span class="val num">${val}</span></li>`;
+  const nada = t => `<li><span></span><span class="txt">${t}</span><span></span></li>`;
+  return `
+    <div class="trig-h">Reforço (compra na queda)</div>
+    <ul class="trig">${reforco.length ? reforco.map(x => item(x.a, 1 - Math.max(0, x.falta) / 0.2, `${x.ref + 1}º reforço a ${brl(x.gat)} · hoje ${brl(x.p)}`,
+      x.falta <= 0 ? "no gatilho" : "falta cair " + pc0(x.falta))).join("") : nada("Nenhum ativo elegível.")}</ul>
+    <div class="trig-h">Realização de lucro (vende o excesso)</div>
+    <ul class="trig">${lucro.map(x => item(x.a, x.rel / TETO, `age em 2,00× o alvo · hoje ${n2(x.rel)}×`, x.rel >= TETO ? "no gatilho" : `falta subir ${pc0(TETO / x.rel - 1, 0)}`)).join("")}</ul>
+    <div class="trig-h">Saída por corte de proventos</div>
+    <ul class="trig">${saude.length ? saude.map(x => item(x.a, x.perto, `sai com queda de ${CORTE[x.g] * 100}% em 12 meses · hoje ${pct(x.saude, 0)}`,
+      x.saude >= 0 ? "longe" : x.perto >= 1 ? "no gatilho" : `faltam ${Math.round((CORTE[x.g] + x.saude) * 100)} pontos`)).join("") : nada("Sem 24 meses de histórico ainda.")}</ul>`;
 }
 
-function irLista() {
-  if (!D.ir.length) return `<div class="empty">A primeira apuração aparece na virada do mês.</div>`;
-  const mes = m => `${m.slice(5)}/${m.slice(0, 4)}`;
-  return `<table><thead><tr><th>Mês</th><th class="r">Vendas</th><th class="r">Lucro ações</th><th>Isento</th><th class="r">Lucro FIIs</th><th class="r">IR</th></tr></thead><tbody>
-    ${D.ir.slice().reverse().map(x => `<tr><td class="num">${mes(x.mes)}</td><td class="r num">${brl(+x.vendas_acoes)}</td>
-      <td class="r num ${sinal(+x.ganho_acoes)}">${brl(+x.ganho_acoes)}</td><td>${esc(x.isento_acoes)}</td>
-      <td class="r num ${sinal(+x.ganho_fiis)}">${brl(+x.ganho_fiis)}</td><td class="r num">${brl(+x.ir_devido)}</td></tr>`).join("")}</tbody></table>`;
+// =====================================================================  MERCADO
+function linhasMercado() {
+  const px = D?.est.precos || {}, c = D?.est.carteira, vd = D?.est.variacao_dia || {}, out = [];
+  for (const [g, lista] of Object.entries(grupos())) for (const a of lista) {
+    const m = M?.ativos?.[a], preco = m?.preco ?? px[a], pm = c?.pm?.[a], ref = D?.est.reforcos?.[a] || 0, gat = gatilhoReforco({ pm, ref });
+    out.push({ g, a, preco, var: m ? m.var : vd[a], min: m?.min, max: m?.max, serie: m?.serie || [], pm, gat,
+      vsPm: pm && preco ? preco / pm - 1 : null, dGat: gat && preco ? preco / gat - 1 : null });
+  }
+  return out;
+}
+function spark(serie, ant) {
+  if (serie.length < 2) return "";
+  const v = serie.map(x => x[1]).concat(ant ? [ant] : []), lo = Math.min(...v), hi = Math.max(...v), W = 84, H = 24, n = serie.length;
+  const y = p => hi === lo ? H / 2 : 2 + (hi - p) * (H - 4) / (hi - lo);
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">${ant ? `<line x1="0" x2="${W}" y1="${y(ant)}" y2="${y(ant)}" stroke="var(--line-2)" stroke-dasharray="2 3"/>` : ""}
+    <polyline fill="none" stroke="var(--s1)" stroke-width="1.6" points="${serie.map((x, i) => `${(i * W / (n - 1)).toFixed(1)},${y(x[1]).toFixed(1)}`).join(" ")}"/></svg>`;
+}
+function tMercado() {
+  const ls = linhasMercado(), temM = !!M?.ativos, doDia = temM && M.atualizado.slice(0, 10) === isoDia(agoraBR());
+  if (!temM && !D) return `<div class="empty"><b>As cotações do dia ainda não chegaram.</b><br>Elas são atualizadas a cada 15 minutos, das 10h às 18h45, em dias úteis.</div>`;
+  if (!S.ativoDia) S.ativoDia = (ls.filter(x => x.dGat != null).sort((a, b) => a.dGat - b.dGat)[0] || ls[0]).a;
+  const ord = S.ordemM === "alta" ? ls.slice().sort((a, b) => (b.var ?? -9) - (a.var ?? -9)) : S.ordemM === "baixa" ? ls.slice().sort((a, b) => (a.var ?? 9) - (b.var ?? 9)) : ls;
+  const altas = ls.filter(x => x.var > 0).length, baixas = ls.filter(x => x.var < 0).length;
+  const linha = x => `<tr class="click" data-dia="${x.a}" tabindex="0"><td class="tk">${x.a}</td><td class="r num">${x.preco ? brl(x.preco) : "—"}</td>
+    <td class="r num ${x.var == null ? "" : sinal(x.var)}" style="font-weight:700">${x.var == null ? "—" : pct(x.var, 2)}</td><td class="so-desk">${spark(x.serie, M?.ativos?.[x.a]?.anterior)}</td>
+    <td class="r num so-desk">${x.min ? `${n2(x.min)} – ${n2(x.max)}` : "—"}</td>
+    <td class="r num so-desk ${x.vsPm == null ? "" : sinal(x.vsPm)}">${x.vsPm == null ? "—" : pct(x.vsPm)}</td>
+    <td class="r num">${x.dGat == null ? "—" : x.dGat <= 0 ? `<span class="chip buy">no gatilho</span>` : pc0(x.dGat)}</td></tr>`;
+  return `
+  <div class="banner">${temM ? `<b>Cotações de ${doDia ? "hoje" : dataBR(M.atualizado.slice(0, 10))}, atualizadas às ${M.atualizado.slice(11, 16)}.</b> Atraso de cerca de 15 a 30 minutos (Yahoo Finance). Atualiza a cada 15 minutos, das 10h às 18h45.`
+    : `<b>Cotações do dia indisponíveis agora.</b> Mostrando os preços do último fechamento do robô (${dataBR(D.est.ultimo_pregao)}).`} O robô só decide no fechamento, às 18h30.</div>
+  ${temM ? `<section class="hero idx">
+    ${Object.entries(INDICES).map(([k, nome]) => { const m = M.ativos[k]; return m ? `<div class="card kpi"><div class="lab">${nome}</div><div class="v num">${k === "IBOV" ? n2(m.preco, 0) : brl(m.preco)}</div><div class="s num ${sinal(m.var)}" style="font-weight:700">${pct(m.var, 2)} no dia</div></div>` : ""; }).join("")}
+    <div class="card kpi"><div class="lab">Ativos da carteira no dia</div><div class="v num"><span class="pos">${altas} em alta</span></div><div class="s num neg" style="font-weight:700">${baixas} em baixa</div></div>
+  </section>` : ""}
+  <section class="grid two">
+    <div class="card">
+      <div class="chart-head"><div><h2>Ativos da carteira</h2><p class="sub">Toque em um ativo para ver o dia dele.</p></div>
+        <div class="seg" role="group" aria-label="Ordenar">${[["carteira", "Carteira"], ["alta", "Maiores altas"], ["baixa", "Maiores baixas"]].map(([k, n]) =>
+          `<button type="button" data-ordem="${k}" aria-pressed="${S.ordemM === k}">${n}</button>`).join("")}</div></div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Ativo</th><th class="r">Preço</th><th class="r">No dia</th><th class="so-desk">Hoje</th><th class="r so-desk">Mín – máx</th><th class="r so-desk">vs médio</th><th class="r">Até o reforço</th></tr></thead>
+        <tbody>${S.ordemM === "carteira" ? Object.keys(grupos()).map(g => `<tr class="grp"><td colspan="7">${NOMES[g]}</td></tr>` + ord.filter(x => x.g === g).map(linha).join("")).join("") : ord.map(linha).join("")}</tbody></table></div>
+      <p class="sub" style="margin:10px 0 0">"vs médio" compara com o preço médio de compra do robô. "Até o reforço" é quanto falta cair para ele comprar mais.</p>
+    </div>
+    <div class="card" id="secDia">
+      <div class="chart-head"><div><h2>${S.ativoDia} no dia</h2><p class="sub">Preço a cada 5 minutos, com as linhas de decisão.</p></div>${selAtivo("pickDia", S.ativoDia)}</div>
+      <div class="legend" id="legDia"></div><div class="chart" id="gDia"></div>
+    </div>
+  </section>`;
+}
+function dMercado() {
+  if (!el("gDia")) return;
+  const a = S.ativoDia, m = M?.ativos?.[a], x = linhasMercado().find(l => l.a === a) || {}, s = m?.serie || [];
+  const refs = [m && { v: m.anterior, n: "Fech. anterior", c: "var(--dim)" }, x.pm && { v: x.pm, n: "Preço médio", c: "var(--ink)" }, x.gat && { v: x.gat, n: "Reforço", c: "var(--pos)" }].filter(Boolean);
+  el("legDia").innerHTML = `<span><i style="background:var(--s1)"></i>Preço</span>` + refs.map(r => `<span><i style="background:${r.c};height:2px"></i>${r.n}: <b class="num">${brl(r.v)}</b></span>`).join("");
+  // as linhas de decisão só entram na escala se estiverem perto do preço do dia; as outras ficam na legenda
+  const perto = s.length ? refs.filter(r => Math.abs(r.v / s[s.length - 1][1] - 1) < 0.12) : [];
+  linhas("gDia", { titulo: `Preço de ${a} ao longo do dia`, rotulos: s.map(p => p[0]), series: [{ n: a, c: "var(--s1)", w: 2.4, v: s.map(p => p[1]) }], refs: perto,
+    eixo: v => n2(v), valor: v => brl(v), altura: 260, extra: i => m ? `<div class="r"><span>no dia</span><b class="num">${pct(s[i][1] / m.anterior - 1, 2)}</b></div>` : "",
+    vazio: "O gráfico do dia aparece durante o pregão (10h às 18h), depois da primeira atualização." });
 }
 
-// ---------- gráfico por ativo: preço, média de 200 dias, preço médio e gatilho de reforço
-function graficoAtivo(lin) {
-  const box = el("chartAtivo"), leg = el("legAtivo"), P = D.precos, a = ativoSel;
-  if (!P || !P.fech?.[a]) { leg.innerHTML = ""; box.innerHTML = `<div class="empty">O histórico de preços aparece depois do próximo fechamento.</div>`; return; }
+// =====================================================================  HISTÓRICO
+function tHistorico() {
+  if (!D) return vazio();
+  const hAll = D.hist, h = recorte(hAll), e = D.est;
+  if (!S.ativo) S.ativo = e.grupos.valorizacao[0];
+  const ret = k => h.length > 1 ? h[h.length - 1][k] / h[0][k] - 1 : 0;
+  let pico = 0, dd = 0, melhor = null, pior = null;
+  h.forEach((x, i) => { pico = Math.max(pico, x.patrimonio); dd = Math.max(dd, 1 - x.patrimonio / pico);
+    if (i) { const r = x.patrimonio / h[i - 1].patrimonio - 1; if (!melhor || r > melhor.r) melhor = { r, d: x.data }; if (!pior || r < pior.r) pior = { r, d: x.data }; } });
+  const meses = {}; hAll.forEach(x => { meses[x.data.slice(0, 7)] = x; });
+  const chaves = Object.keys(meses).sort(), linhasMes = chaves.map((m, i) => { const ant = i ? meses[chaves[i - 1]] : Object.fromEntries(SERIES.map(s => [s.k, e.capital]));
+    return { m, r: Object.fromEntries(SERIES.map(s => [s.k, meses[m][s.k] / ant[s.k] - 1])) }; }).reverse();
+  const periodo = h.length > 1 ? `${dataBR(h[0].data)} a ${dataBR(h[h.length - 1].data)} · ${h.length} pregões` : "sem dados ainda";
+  return `
+  <section class="card full">
+    <div class="chart-head"><div><h2>Desempenho no período</h2><p class="sub">${periodo}.</p></div>${segFaixa()}</div>
+    <div class="tiles">
+      ${tile("Robô", pct(ret("patrimonio"), 2), `carteira parada ${pct(ret("carteira_parada"), 2)}`, sinal(ret("patrimonio")))}
+      ${tile("Contra o CDI", pct(ret("patrimonio") - ret("cdi"), 2).replace("%", " p.p."), `CDI líquido ${pct(ret("cdi"), 2)}`, sinal(ret("patrimonio") - ret("cdi")))}
+      ${tile("Maior queda do pico", dd ? "−" + n2(dd * 100, 1) + "%" : "0,0%", "do patrimônio do robô no período")}
+      ${tile("Melhor e pior dia", melhor ? `${pct(melhor.r)} · ${pct(pior.r)}` : "—", melhor ? `${curta(melhor.d)} e ${curta(pior.d)}` : "a partir do 2º fechamento")}
+    </div>
+  </section>
+  <section class="grid half">
+    <div class="card">
+      <h2>Retorno por mês</h2><p class="sub">Cada mês contra o fim do mês anterior. O mês corrente é parcial.</p>
+      ${linhasMes.length ? `<div class="tbl-wrap" style="max-height:360px;overflow:auto"><table><thead><tr><th>Mês</th>${SERIES.map(s => `<th class="r">${s.n.replace("Carteira parada", "Parada").replace(" líquido", "")}</th>`).join("")}</tr></thead><tbody>
+        ${linhasMes.map(x => `<tr><td class="num">${mesBR(x.m)}</td>${SERIES.map(s => `<td class="r num ${sinal(x.r[s.k])}" ${s.k === "patrimonio" ? 'style="font-weight:700"' : ""}>${pct(x.r[s.k], 2)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : `<div class="empty">Aparece depois do primeiro fechamento.</div>`}
+    </div>
+    <div class="card">
+      <h2>Proventos por mês</h2><p class="sub">Dividendos, JCP e rendimentos de FIIs creditados nos últimos 12 meses, em R$.</p>
+      <div id="gProv"></div>
+    </div>
+  </section>
+  <section class="card full" id="secAtivo">
+    <div class="chart-head"><div><h2>${S.ativo} · 6 meses</h2><p class="sub">Fechamento diário com a média de 200 dias e as linhas que fazem o robô agir.</p></div>${selAtivo("pickHist", S.ativo)}</div>
+    <div class="legend" id="legAtivo"></div><div class="chart" id="gAtivo"></div>
+  </section>
+  <section class="card full">
+    <div class="chart-head"><div><h2>Patrimônio dia a dia</h2><p class="sub">Valores no fechamento de cada pregão, em R$.</p></div>
+      <button type="button" class="linkbtn" id="btnTabela">${S.tabela ? "Esconder tabela" : `Mostrar tabela (${h.length} pregões)`}</button></div>
+    ${S.tabela ? `<div class="tbl-wrap" style="max-height:340px;overflow:auto"><table><thead><tr><th>Data</th>${SERIES.map(s => `<th class="r">${s.n}</th>`).join("")}<th class="r">Caixa</th><th class="r">Ops</th></tr></thead><tbody>
+      ${h.slice().reverse().map(x => `<tr><td class="num">${dataBR(x.data)}</td>${SERIES.map(s => `<td class="r num">${n2(x[s.k])}</td>`).join("")}<td class="r num">${n2(x.caixa)}</td><td class="r num">${x.operacoes}</td></tr>`).join("")}</tbody></table></div>` : ""}
+  </section>`;
+}
+function dHistorico() {
+  barras();
+  const P = D.precos, a = S.ativo, leg = el("legAtivo");
+  if (!P || !P.fech?.[a]) { leg.innerHTML = ""; el("gAtivo").innerHTML = `<div class="empty">O histórico de preços aparece depois do próximo fechamento.</div>`; return; }
   const pts = P.datas.map((d, i) => ({ d, c: P.fech[a][i], m: P.mm200[a][i] })).filter(x => x.c != null);
-  if (pts.length < 2) { box.innerHTML = `<div class="empty">Sem histórico suficiente para ${a}.</div>`; return; }
-  const x = lin.find(l => l.a === a) || {}, pm = x.pm || null, k = x.ref || 0;
-  const gat = pm && k < 2 ? pm * (k === 0 ? REFORCO_1 : REFORCO_2 / REFORCO_1) : null;
-  const refs = [pm && { v: pm, n: "Preço médio", c: "var(--ink)" }, gat && { v: gat, n: `${k + 1}º reforço`, c: "var(--pos)" }].filter(Boolean);
-  leg.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)"><i style="background:var(--s1)"></i>Fechamento</span>
-    <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)"><i style="background:var(--s2)"></i>Média de 200 dias</span>
-    ${refs.map(r => `<span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)"><i style="background:${r.c};height:2px"></i>${r.n}: <b class="num">${brl(r.v)}</b></span>`).join("")}`;
-  const W = box.clientWidth || 800, H = window.innerWidth <= 560 ? 230 : 280, m = { l: 58, r: W < 560 ? 12 : 92, t: 10, b: 26 };
-  const vals = pts.flatMap(p => [p.c, p.m]).concat(refs.map(r => r.v)).filter(v => v != null);
-  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.08 || hi * 0.01; lo -= pad; hi += pad;
-  const X = i => m.l + i * (W - m.l - m.r) / (pts.length - 1), Y = v => m.t + (hi - v) * (H - m.t - m.b) / (hi - lo);
-  const ty = Array.from({ length: 5 }, (_, i) => lo + (hi - lo) * i / 4), nx = Math.min(6, pts.length);
-  const tx = Array.from({ length: nx }, (_, i) => Math.round(i * (pts.length - 1) / (nx - 1)));
-  const caminho = key => { let d = "", on = false; pts.forEach((p, i) => { if (p[key] == null) { on = false; return; } d += `${on ? "L" : "M"}${X(i).toFixed(1)},${Y(p[key]).toFixed(1)}`; on = true; }); return d; };
-  let svg = `<svg viewBox="0 0 ${W} ${H}" style="height:${H}px" role="img" aria-label="Preço de ${a} com média de 200 dias, preço médio e gatilho de reforço">`;
-  svg += ty.map(v => `<line class="grid-l" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="ax num" x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</text>`).join("");
-  svg += tx.map(i => `<text class="ax num" x="${X(i)}" y="${H - 6}" text-anchor="middle">${curta(pts[i].d)}</text>`).join("");
-  const rot = refs.map(r => ({ ...r, y: Y(r.v) })).sort((p, q) => p.y - q.y);
-  for (let i = 1; i < rot.length; i++) if (rot[i].y - rot[i - 1].y < 14) rot[i].y = rot[i - 1].y + 14;
-  svg += rot.map(r => `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(r.v)}" y2="${Y(r.v)}" stroke="${r.c}" stroke-width="1.5" stroke-dasharray="5 4"/>` +
-    (W >= 560 ? `<text x="${W - m.r + 8}" y="${r.y + 4}" font-size="11.5" fill="var(--ink-2)">${r.n}</text>` : "")).join("");
-  svg += `<path d="${caminho("m")}" fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round"/>`;
-  svg += `<path d="${caminho("c")}" fill="none" stroke="var(--s1)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>`;
-  svg += `<circle cx="${X(pts.length - 1)}" cy="${Y(pts[pts.length - 1].c)}" r="4" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>`;
-  svg += `<line id="crossA" y1="${m.t}" y2="${H - m.b}" stroke="var(--dim)" visibility="hidden"/><circle id="dotA" r="4.5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`;
-  svg += `<rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent" id="hitA"/></svg><div class="tip" id="tipA"></div>`;
-  box.innerHTML = svg;
-  const hit = el("hitA"), tip = el("tipA"), cross = el("crossA"), dot = el("dotA");
-  const mover = ev => {
-    const r = box.querySelector("svg").getBoundingClientRect(), sx = W / r.width;
-    const px = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) * sx;
-    const i = Math.max(0, Math.min(pts.length - 1, Math.round((px - m.l) / ((W - m.l - m.r) / (pts.length - 1))))), p = pts[i];
-    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("visibility", "visible");
-    dot.setAttribute("cx", X(i)); dot.setAttribute("cy", Y(p.c)); dot.setAttribute("visibility", "visible");
-    tip.innerHTML = `<div class="d">${a} · ${dataBR(p.d)}</div>
-      <div class="r"><span><i style="background:var(--s1)"></i>Fechamento</span><b class="num">${brl(p.c)}</b></div>
-      ${p.m != null ? `<div class="r"><span><i style="background:var(--s2)"></i>Média 200 dias</span><b class="num">${brl(p.m)}</b></div>` : ""}
-      ${pm ? `<div class="r"><span>vs preço médio</span><b class="num">${pct(p.c / pm - 1)}</b></div>` : ""}`;
-    tip.style.display = "block";
-    const left = X(i) / sx, w = tip.offsetWidth;
-    tip.style.left = Math.max(0, Math.min(r.width - w, left + (left > r.width / 2 ? -w - 14 : 14))) + "px"; tip.style.top = "10px";
-  };
-  const sair = () => { tip.style.display = "none"; cross.setAttribute("visibility", "hidden"); dot.setAttribute("visibility", "hidden"); };
-  hit.addEventListener("mousemove", mover); hit.addEventListener("touchmove", mover, { passive: true });
-  hit.addEventListener("mouseleave", sair); hit.addEventListener("touchend", sair);
+  const x = posicoes().lin.find(l => l.a === a) || {}, gat = gatilhoReforco(x);
+  const refs = [x.pm && { v: x.pm, n: "Preço médio", c: "var(--ink)" }, gat && { v: gat, n: `${x.ref + 1}º reforço`, c: "var(--pos)" }].filter(Boolean);
+  leg.innerHTML = `<span><i style="background:var(--s1)"></i>Fechamento</span><span><i style="background:var(--s2)"></i>Média de 200 dias</span>` +
+    refs.map(r => `<span><i style="background:${r.c};height:2px"></i>${r.n}: <b class="num">${brl(r.v)}</b></span>`).join("");
+  linhas("gAtivo", { titulo: `Preço de ${a} em 6 meses, com média de 200 dias, preço médio e gatilho de reforço`, rotulos: pts.map(p => curta(p.d)), dica: i => `${a} · ${dataBR(pts[i].d)}`,
+    series: [{ n: "Fechamento", c: "var(--s1)", w: 2.4, v: pts.map(p => p.c) }, { n: "Média 200 dias", c: "var(--s2)", w: 2, v: pts.map(p => p.m) }], refs,
+    eixo: v => n2(v), valor: v => brl(v), extra: i => x.pm ? `<div class="r"><span>vs preço médio</span><b class="num">${pct(pts[i].c / x.pm - 1)}</b></div>` : "" });
 }
-
-function diario() {
-  const ops = D.ops.filter(o => filtroOp === "todas" || o.tipo === filtroOp).slice().reverse();
-  if (!ops.length) return `<div class="empty">Nenhuma operação ${filtroOp === "todas" ? "" : "deste tipo "}ainda.</div>`;
-  return `<table><thead><tr><th>Data</th><th>Tipo</th><th>Ativo</th><th class="r">Qtd</th><th class="r">Valor</th><th>Motivo</th></tr></thead><tbody>
-    ${ops.map(o => `<tr><td class="num">${dataBR(o.data)}</td><td><span class="chip ${o.tipo === "COMPRA" ? "buy" : "sell"}">${o.tipo === "COMPRA" ? "Compra" : "Venda"}</span></td>
-      <td class="tk">${esc(o.ativo)}</td><td class="r num">${esc(o.quantidade)}</td><td class="r num">${brl(+o.valor)}</td><td class="motivo">${esc(o.motivo)}</td></tr>`).join("")}</tbody></table>`;
-}
-
-function provLista() {
-  if (!D.prov.length) return `<div class="empty">Nenhum provento recebido ainda. O primeiro aparece no fechamento da data-com.</div>`;
-  return `<table><thead><tr><th>Data-com</th><th>Ativo</th><th class="r">Por cota</th><th class="r">Total</th></tr></thead><tbody>
-    ${D.prov.slice().reverse().map(p => `<tr><td class="num">${dataBR(p.data_com)}</td><td class="tk">${esc(p.ativo)}</td>
-      <td class="r num">${brl(+p.valor_por_cota, 4)}</td><td class="r num">${brl(+p.total)}</td></tr>`).join("")}</tbody></table>`;
-}
-
-// ---------- gráfico de linhas com cruz e dica
-function grafico() {
-  const box = el("chart");
-  let h = D.hist;
-  if (faixa !== "tudo" && h.length) {
-    const fim = new Date(h[h.length - 1].data), ini = new Date(fim);
-    ini.setMonth(ini.getMonth() - (faixa === "1m" ? 1 : 3));
-    h = h.filter(x => new Date(x.data) >= ini);
-  }
-  if (h.length < 2) {
-    box.innerHTML = `<div class="empty">O gráfico aparece a partir do segundo fechamento.${h.length ? ` Hoje: robô ${brl(h[0].patrimonio)}.` : ""}</div>`;
-    el("tblHist").innerHTML = ""; return;
-  }
-  const ss = SERIES.filter(s => vis[s.k]);
-  const W = box.clientWidth || 800, H = window.innerWidth <= 560 ? 240 : 300, m = { l: 62, r: W < 560 ? 12 : 96, t: 10, b: 26 };
-  const vals = h.flatMap(x => ss.map(s => x[s.k])).filter(v => isFinite(v) && v > 0);
-  if (!vals.length) { box.innerHTML = `<div class="empty">Escolha ao menos uma série na legenda.</div>`; return; }
-  let lo = Math.min(...vals), hi = Math.max(...vals); const pad = (hi - lo) * 0.08 || hi * 0.01; lo -= pad; hi += pad;
-  const X = i => m.l + i * (W - m.l - m.r) / (h.length - 1), Y = v => m.t + (hi - v) * (H - m.t - m.b) / (hi - lo);
-  const ticks = 4, ty = Array.from({ length: ticks + 1 }, (_, i) => lo + (hi - lo) * i / ticks);
-  const nx = Math.min(6, h.length), tx = Array.from({ length: nx }, (_, i) => Math.round(i * (h.length - 1) / (nx - 1)));
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Patrimônio do robô e das referências ao longo do tempo">`;
-  svg += ty.map(v => `<line class="grid-l" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="ax num" x="${m.l - 8}" y="${Y(v) + 4}" text-anchor="end">${brl(v, 0).replace("R$ ", "")}</text>`).join("");
-  svg += tx.map(i => `<text class="ax num" x="${X(i)}" y="${H - 6}" text-anchor="middle">${curta(h[i].data)}</text>`).join("");
-  svg += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(D.est.capital)}" y2="${Y(D.est.capital)}" stroke="var(--line-2)" stroke-dasharray="3 4"/>`;
-  // desenha o robô por último, por cima
-  const ordem = ss.slice().sort((a, b) => (a.k === "patrimonio") - (b.k === "patrimonio"));
-  for (const s of ordem) {
-    const d = h.map((x, i) => `${i ? "L" : "M"}${X(i).toFixed(1)},${Y(x[s.k]).toFixed(1)}`).join("");
-    svg += `<path d="${d}" fill="none" stroke="${s.c}" stroke-width="${s.w}" stroke-linejoin="round" stroke-linecap="round"/>`;
-  }
-  // rótulos diretos no fim da linha, sem sobreposição
-  if (W >= 560) {
-    const ends = ss.map(s => ({ s, y: Y(h[h.length - 1][s.k]) })).sort((a, b) => a.y - b.y);
-    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
-    svg += ends.map(e => `<circle cx="${X(h.length - 1)}" cy="${Y(h[h.length - 1][e.s.k])}" r="4" fill="${e.s.c}" stroke="var(--surface)" stroke-width="2"/>
-      <text x="${X(h.length - 1) + 10}" y="${e.y + 4}" font-size="11.5" fill="var(--ink-2)" font-weight="${e.s.k === "patrimonio" ? 700 : 500}">${e.s.n}</text>`).join("");
-  }
-  svg += `<line id="cross" y1="${m.t}" y2="${H - m.b}" stroke="var(--dim)" stroke-width="1" visibility="hidden"/>`;
-  svg += `<g id="hdots"></g><rect x="${m.l}" y="${m.t}" width="${W - m.l - m.r}" height="${H - m.t - m.b}" fill="transparent" id="hit"/></svg><div class="tip" id="tip"></div>`;
-  box.innerHTML = svg;
-  const hit = el("hit"), tip = el("tip"), cross = el("cross"), dots = el("hdots");
-  const mover = ev => {
-    const r = box.querySelector("svg").getBoundingClientRect(), sx = W / r.width;
-    const px = ((ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left) * sx;
-    const i = Math.max(0, Math.min(h.length - 1, Math.round((px - m.l) / ((W - m.l - m.r) / (h.length - 1)))));
-    const x = h[i];
-    cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); cross.setAttribute("visibility", "visible");
-    dots.innerHTML = ss.map(s => `<circle cx="${X(i)}" cy="${Y(x[s.k])}" r="4.5" fill="${s.c}" stroke="var(--surface)" stroke-width="2"/>`).join("");
-    tip.innerHTML = `<div class="d">${dataBR(x.data)}</div>` + ss.slice().sort((a, b) => x[b.k] - x[a.k]).map(s =>
-      `<div class="r"><span><i style="background:${s.c}"></i>${s.n}</span><b class="num">${brl(x[s.k])}</b></div>`).join("");
-    tip.style.display = "block";
-    const left = X(i) / sx, w = tip.offsetWidth;
-    tip.style.left = Math.max(0, Math.min(r.width - w, left + (left > r.width / 2 ? -w - 14 : 14))) + "px";
-    tip.style.top = "10px";
-  };
-  const sair = () => { tip.style.display = "none"; cross.setAttribute("visibility", "hidden"); dots.innerHTML = ""; };
-  hit.addEventListener("mousemove", mover); hit.addEventListener("touchmove", mover, { passive: true });
-  hit.addEventListener("mouseleave", sair); hit.addEventListener("touchend", sair);
-  el("tblHist").innerHTML = tabela ? `<div class="tbl-wrap" style="max-height:260px;overflow:auto;margin-top:10px"><table><thead><tr><th>Data</th>${SERIES.map(s => `<th class="r">${s.n}</th>`).join("")}</tr></thead><tbody>
-    ${h.slice().reverse().map(x => `<tr><td class="num">${dataBR(x.data)}</td>${SERIES.map(s => `<td class="r num">${brl(x[s.k])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : "";
-}
-
-// ---------- barras de proventos por mês (série única)
 function barras() {
-  const box = el("bars");
-  const porMes = {};
-  for (const p of D.prov) { const k = p.data_com.slice(0, 7); porMes[k] = (porMes[k] || 0) + +p.total; }
-  const ini = D.est.inicio.slice(0, 7), fim = D.est.ultimo_pregao.slice(0, 7), meses = [];
-  for (let d = new Date(ini + "-01T12:00"); d.toISOString().slice(0, 7) <= fim; d.setMonth(d.getMonth() + 1)) meses.push(d.toISOString().slice(0, 7));
-  const ult = meses.slice(-12);
-  if (!D.prov.length) { box.innerHTML = ""; return; }
-  const W = box.clientWidth || 400, H = 150, m = { l: 8, r: 8, t: 18, b: 22 };
-  const mx = Math.max(...ult.map(k => porMes[k] || 0), 1), bw = (W - m.l - m.r) / ult.length;
-  const nomes = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
-  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Proventos recebidos por mês">
+  const box = el("gProv"); if (!box) return;
+  if (!D.prov.length) { box.innerHTML = `<div class="empty">Nenhum provento recebido ainda. O primeiro aparece no fechamento da data-com.</div>`; return; }
+  const porMes = {}; for (const p of D.prov) { const k = p.data_com.slice(0, 7); porMes[k] = (porMes[k] || 0) + +p.total; }
+  const meses = []; for (let d = new Date(D.est.inicio.slice(0, 7) + "-01T12:00"); d.toISOString().slice(0, 7) <= D.est.ultimo_pregao.slice(0, 7); d.setMonth(d.getMonth() + 1)) meses.push(d.toISOString().slice(0, 7));
+  const ult = meses.slice(-12), W = box.clientWidth || 400, H = 190, m = { l: 8, r: 8, t: 20, b: 22 }, mx = Math.max(...ult.map(k => porMes[k] || 0), 1), bw = (W - m.l - m.r) / ult.length;
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block" role="img" aria-label="Proventos recebidos por mês, em reais">
     <line x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}" stroke="var(--line-2)"/>
-    ${ult.map((k, i) => { const v = porMes[k] || 0, bh = v / mx * (H - m.t - m.b), x = m.l + i * bw + bw * 0.18, w = bw * 0.64;
-      return `<g><title>${nomes[+k.slice(5) - 1]}/${k.slice(2, 4)}: ${brl(v)}</title>
-        ${v ? `<path d="M${x},${H - m.b} V${H - m.b - bh + 4} q0,-4 4,-4 H${x + w - 4} q4,0 4,4 V${H - m.b} Z" fill="var(--s1)"/>` : ""}
-        ${v ? `<text x="${x + w / 2}" y="${H - m.b - bh - 5}" text-anchor="middle" font-size="10.5" fill="var(--ink-2)" class="num">${Math.round(v)}</text>` : ""}
-        <text class="ax" x="${x + w / 2}" y="${H - 6}" text-anchor="middle">${nomes[+k.slice(5) - 1]}</text></g>`; }).join("")}
-  </svg>`;
+    ${ult.map((k, i) => { const v = porMes[k] || 0, bh = Math.max(v ? 5 : 0, v / mx * (H - m.t - m.b)), w = Math.min(46, bw * 0.6), x = m.l + i * bw + (bw - w) / 2, r = Math.min(4, bh / 2);
+      return `<g><title>${mesBR(k)}: ${brl(v)}</title>${v ? `<path d="M${x},${H - m.b} V${H - m.b - bh + r} q0,-${r} ${r},-${r} H${x + w - r} q${r},0 ${r},${r} V${H - m.b} Z" fill="var(--s1)"/>
+        <text x="${x + w / 2}" y="${H - m.b - bh - 5}" text-anchor="middle" font-size="10.5" fill="var(--ink-2)" class="num">${n2(v, 0)}</text>` : ""}
+        <text x="${x + w / 2}" y="${H - 6}" text-anchor="middle" font-size="10.5" fill="var(--dim)">${mesBR(k).slice(0, 3)}</text></g>`; }).join("")}</svg>`;
 }
 
-let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => D && desenhar(), 150); });
+// =====================================================================  EXTRATO
+function lancamentos() {
+  const out = [];
+  for (const o of D.ops) out.push({ data: o.data, tipo: o.tipo, ativo: o.ativo, det: `${o.quantidade} × ${brl(+o.preco)}`, valor: (o.tipo === "COMPRA" ? -1 : 1) * +o.valor, custo: +o.custo, motivo: o.motivo, montagem: o.motivo === "montagem inicial" });
+  for (const p of D.prov) out.push({ data: p.data_com, tipo: "PROVENTO", ativo: p.ativo, det: `${p.quantidade} × ${brl(+p.valor_por_cota, 4)}`, valor: +p.total, custo: 0, motivo: "provento creditado na data-com" });
+  for (const v of D.vetos) out.push({ data: v.data, tipo: "VETO", ativo: v.ativo, det: `${v.tipo.toLowerCase()} de ${brl(+v.valor)} não executada`, valor: null, custo: 0, motivo: v.trava });
+  for (const i of D.ir) if (+i.ir_pago > 0) out.push({ data: i.mes + "-31", tipo: "IR", ativo: "", det: `apuração de ${mesBR(i.mes)}`, valor: -i.ir_pago, custo: 0, motivo: "DARF simulado" });
+  return out.sort((a, b) => b.data.localeCompare(a.data));
+}
+function tExtrato() {
+  if (!D) return vazio();
+  const todos = lancamentos(), meses = [...new Set(todos.map(x => x.data.slice(0, 7)))].sort().reverse();
+  const ls = todos.filter(x => (S.fTipo === "todos" || x.tipo === S.fTipo) && (!S.fAtivo || x.ativo === S.fAtivo) && (!S.fMes || x.data.startsWith(S.fMes)));
+  const mont = ls.filter(x => x.montagem), agrupar = mont.length > 1 && !S.montagem && !S.fAtivo;
+  const soma = t => ls.filter(x => x.tipo === t).reduce((s, x) => s + Math.abs(x.valor || 0), 0), custos = ls.reduce((s, x) => s + x.custo, 0);
+  const visiveis = agrupar ? ls.filter(x => !x.montagem) : ls;
+  const chip = t => ({ COMPRA: `<span class="chip buy">Compra</span>`, VENDA: `<span class="chip sell">Venda</span>`, PROVENTO: `<span class="chip info">Provento</span>`, VETO: `<span class="chip warn">Veto</span>`, IR: `<span class="chip ok">IR</span>` }[t]);
+  const dataTxt = x => x.tipo === "IR" ? mesBR(x.data.slice(0, 7)) : dataBR(x.data);
+  const filtrado = S.fTipo !== "todos" || S.fAtivo || S.fMes;
+  const corpo = visiveis.map(x => `<tr><td class="num">${dataTxt(x)}</td><td>${chip(x.tipo)}</td><td class="tk">${esc(x.ativo) || "—"}</td><td class="num so-desk">${esc(x.det)}</td>
+    <td class="r num ${x.valor == null ? "" : sinal(x.valor)}">${x.valor == null ? "—" : din(x.valor)}</td><td class="motivo">${esc(x.motivo)}</td></tr>`);
+  if (agrupar) {  // a montagem inicial vira uma linha só, na posição da data dela
+    const i = visiveis.findIndex(x => x.data < mont[0].data);
+    corpo.splice(i < 0 ? corpo.length : i, 0, `<tr><td class="num">${dataBR(mont[0].data)}</td><td><span class="chip buy">Compra</span></td><td class="tk">${mont.length} ativos</td><td class="so-desk">montagem inicial da carteira</td>
+      <td class="r num neg">${din(mont.reduce((s, x) => s + x.valor, 0))}</td><td class="motivo">montagem inicial · <button type="button" class="linkbtn" id="btnMont">ver as ${mont.length} compras</button></td></tr>`);
+  }
+  return `
+  <section class="card full">
+    <h2>Extrato</h2><p class="sub">Tudo o que mexeu na carteira: compras, vendas, proventos, imposto e as ordens que o porteiro vetou. Mais recente primeiro.</p>
+    <div class="filters">
+      <div class="seg" role="group" aria-label="Tipo">${[["todos", "Tudo"], ["COMPRA", "Compras"], ["VENDA", "Vendas"], ["PROVENTO", "Proventos"], ["VETO", "Vetos"]].map(([k, n]) =>
+        `<button type="button" data-ftipo="${k}" aria-pressed="${S.fTipo === k}">${n}</button>`).join("")}</div>
+      <select class="pick" id="fAtivo" aria-label="Filtrar por ativo"><option value="">Todos os ativos</option>${Object.values(grupos()).flat().map(a => `<option ${a === S.fAtivo ? "selected" : ""}>${a}</option>`).join("")}</select>
+      <select class="pick" id="fMes" aria-label="Filtrar por mês"><option value="">Todos os meses</option>${meses.map(m => `<option value="${m}" ${m === S.fMes ? "selected" : ""}>${mesBR(m)}</option>`).join("")}</select>
+      ${filtrado ? `<button type="button" class="linkbtn" id="btnLimpar">Limpar filtros</button>` : ""}
+    </div>
+    <div class="totais num"><span><b>${ls.length}</b> ${ls.length === 1 ? "lançamento" : "lançamentos"}</span><span>Compras <b>${brl(soma("COMPRA"))}</b></span><span>Vendas <b>${brl(soma("VENDA"))}</b></span>
+      <span>Proventos <b class="pos">${brl(soma("PROVENTO"))}</b></span><span>Custos de negociação <b>${brl(custos)}</b></span></div>
+    ${ls.length ? `<div class="tbl-wrap" style="max-height:560px;overflow:auto"><table><thead><tr><th>Data</th><th>Tipo</th><th>Ativo</th><th class="so-desk">Detalhe</th><th class="r">Valor</th><th>Motivo</th></tr></thead>
+      <tbody>${corpo.join("")}</tbody></table></div>` : `<div class="empty">Nenhum lançamento com esses filtros. <button type="button" class="linkbtn" id="btnLimpar2">Limpar filtros</button></div>`}
+  </section>
+  <section class="card full">
+    <h2>Imposto de renda (simulado)</h2><p class="sub">Apuração de cada mês, em R$. Ações ficam isentas com vendas até R$ 20 mil no mês; FIIs pagam 20% sobre o lucro.</p>
+    ${D.ir.length ? `<div class="tbl-wrap"><table><thead><tr><th>Mês</th><th class="r">Vendas de ações</th><th class="r">Lucro em ações</th><th>Isento</th><th class="r">Lucro em FIIs</th><th class="r">IR devido</th></tr></thead><tbody>
+      ${D.ir.slice().reverse().map(x => `<tr><td class="num">${mesBR(x.mes)}</td><td class="r num">${n2(+x.vendas_acoes)}</td><td class="r num ${sinal(+x.ganho_acoes)}">${n2(+x.ganho_acoes)}</td><td>${esc(x.isento_acoes)}</td>
+        <td class="r num ${sinal(+x.ganho_fiis)}">${n2(+x.ganho_fiis)}</td><td class="r num">${n2(+x.ir_devido)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="empty">A primeira apuração aparece na virada do mês.</div>`}
+  </section>`;
+}
+
+// =====================================================================  REGRAS
+function tRegras() {
+  const t = D?.est.travas || {}, p = (v, d) => ((v ?? d) * 100).toFixed(0), gh = `https://github.com/${REPO}/blob/main/`;
+  const linha = (a, b) => `<tr><td class="solto">${a}</td><td class="r solto">${b}</td></tr>`;
+  return `
+  <section class="card full">
+    <h2>Como o robô decide</h2><p class="sub">Regras da versão V3, a que foi melhor no teste com dados passados. Ele decide sozinho uma vez por dia útil, no fechamento (18h30), e não afrouxa nenhuma regra por conta própria.</p>
+    <div class="rules">
+      <div class="rule"><b>🟢 Reforço nas quedas</b><p>Ativo 15% abaixo do preço médio: compra mais cerca de R$ 250 com a reserva. Segundo reforço com mais 12% de queda. No máximo 2 por mês, nenhum ativo acima de 2× o alvo, e só com proventos em dia.</p></div>
+      <div class="rule"><b>🔵 Realização de lucro</b><p>Posição acima de 2× o alvo volta para o alvo. No primeiro pregão de cada trimestre, rebalanceia tudo. FIIs só recebem compras, porque vender cota paga 20% de IR.</p></div>
+      <div class="rule"><b>🔴 Saída por tese</b><p>Ação de dividendos com proventos 30% menores em 12 meses, ou FII com 25% menores: vende tudo e volta quando os proventos se recuperam. Queda de 35% do topo só gera alerta, sem venda.</p></div>
+    </div>
+  </section>
+  <section class="grid half">
+    <div class="card"><h2>Carteira e dinheiro</h2><p class="sub">R$ 6.000 de mentira desde 25/11/2026.</p>
+      <div class="tbl-wrap"><table><tbody>
+        ${linha("10 ações de valorização", "R$ 250 cada")}${linha("5 ações de dividendos", "R$ 250 cada")}${linha("5 FIIs", "R$ 250 cada")}
+        ${linha("Reserva para reforços", "R$ 1.000, rendendo CDI")}${linha("Custo por operação", "0,13% (B3 e diferença de preço)")}
+        ${linha("Réguas a vencer", "CDI líquido, carteira parada, Ibovespa e IFIX")}</tbody></table></div></div>
+    <div class="card"><h2>Porteiro de risco</h2><p class="sub">Toda ordem passa por estas travas. Os vetos aparecem no Extrato.</p>
+      <div class="tbl-wrap"><table><tbody>
+        ${linha("Valor por ordem", `até ${p(t.ordem_max, .15)}% do patrimônio`)}${linha("Operações por dia", `até ${t.max_ops_dia ?? 8}, fora do rebalanceamento`)}
+        ${linha("Cotação que não é do dia", "não opera no ativo")}${linha(`Salto acima de ${p(t.salto_suspeito, .25)}% sem desdobramento`, "dado suspeito: não opera")}
+        ${linha(`Movimento acima de ${p(t.vol_max_dia, .10)}% no dia`, "não opera no ativo")}${linha("Compra e venda do mesmo ativo no dia", "proibido (sem day trade)")}
+        ${linha("Vendas de ações no mês", `trava em ${brl(t.vendas_mes_limite ?? 19000, 0)} (isenção de IR)`)}${linha("Caixa ou quantidade negativa", "para tudo e avisa")}</tbody></table></div></div>
+  </section>
+  <section class="grid half">
+    <div class="card"><h2>Avisos no Telegram</h2><p class="sub">O que chega e o que o robô faz em cada caso.</p>
+      <div class="tbl-wrap"><table><tbody>
+        ${linha("📊 Fechamento, todo dia útil", "operações, vetos, proventos e patrimônio")}${linha("🗓️ Relatório semanal, na sexta", "semana contra as referências")}
+        ${linha("ℹ️ Informativo", "continua operando")}${linha("⏸️ Pausa no ativo", "pula o ativo e retoma sozinho")}
+        ${linha("🛑 Parada técnica", "não altera a carteira; tenta no dia seguinte")}${linha("🚨 Urgente", "para tudo e não grava")}
+        ${linha("📵 Sinal de vida, às 20h30", "dispara o robô se ele não rodou")}</tbody></table></div></div>
+    <div class="card"><h2>Quando avançar e quando desistir</h2><p class="sub">Critérios combinados antes de pensar em dinheiro real.</p>
+      <div class="tbl-wrap"><table><tbody>
+        ${linha("Tempo de simulado", "pelo menos 90 dias e uma revisão trimestral")}${linha("Falhas", "nenhuma parada sem causa entendida")}
+        ${linha("Contra a carteira parada", "no máximo 5 pontos atrás")}${linha("Desistir se", "em 6 meses perder da carteira parada e do CDI")}</tbody></table></div>
+      <p class="sub" style="margin:12px 0 0">Documentos: <a href="${gh}PLANO.md">plano</a> · <a href="${gh}ANALISE.md">análise dos ativos</a> · <a href="${gh}backtest/ROBO_REGRAS.md">teste das regras</a></p></div>
+  </section>`;
+}
+
+// =====================================================================  navegação e eventos
+function render() {
+  el("tabs").innerHTML = ABAS.map(([k, n]) => `<button type="button" role="tab" id="tab-${k}" aria-selected="${aba === k}" aria-controls="app" data-aba="${k}">${n}</button>`).join("");
+  const app = el("app"); app.setAttribute("role", "tabpanel"); app.setAttribute("aria-labelledby", "tab-" + aba);
+  app.innerHTML = { resumo: tResumo, mercado: tMercado, historico: tHistorico, extrato: tExtrato, regras: tRegras }[aba]();
+  if (aba === "resumo" && D) dResumo();
+  if (aba === "mercado") dMercado();
+  if (aba === "historico" && D) dHistorico();
+  status();
+}
+function ir(nova, alvo) {
+  aba = nova; history.replaceState(null, "", "#" + nova); render();
+  (alvo ? el(alvo) : document.querySelector(".tabs"))?.scrollIntoView({ block: "start" });
+}
+document.addEventListener("click", ev => {
+  const t = ev.target.closest("[data-aba],[data-faixa],[data-modo],[data-serie],[data-ativo],[data-dia],[data-ordem],[data-ftipo],#btnTabela,#btnMont,#btnLimpar,#btnLimpar2");
+  if (!t) return;
+  const d = t.dataset;
+  if (d.aba) return ir(d.aba);
+  if (d.ativo) { S.ativo = d.ativo; return ir("historico", "secAtivo"); }
+  if (d.faixa) S.faixa = d.faixa; else if (d.modo) S.modo = d.modo; else if (d.serie) S.vis[d.serie] = !S.vis[d.serie];
+  else if (d.dia) S.ativoDia = d.dia; else if (d.ordem) S.ordemM = d.ordem; else if (d.ftipo) S.fTipo = d.ftipo;
+  else if (t.id === "btnTabela") S.tabela = !S.tabela; else if (t.id === "btnMont") S.montagem = true;
+  else if (t.id.startsWith("btnLimpar")) { S.fTipo = "todos"; S.fAtivo = ""; S.fMes = ""; S.montagem = false; }
+  render();
+  if (d.dia && window.innerWidth <= 860) el("secDia")?.scrollIntoView({ block: "start" });
+});
+document.addEventListener("change", ev => {
+  const id = ev.target.id, v = ev.target.value;
+  if (id === "pickDia") S.ativoDia = v; else if (id === "pickHist") S.ativo = v; else if (id === "fAtivo") S.fAtivo = v; else if (id === "fMes") S.fMes = v; else return;
+  render();
+});
+document.addEventListener("keydown", ev => { if (ev.key === "Enter" && ev.target.matches("tr.click")) ev.target.click(); });
+const inicial = location.hash.slice(1); if (ABAS.some(a => a[0] === inicial)) aba = inicial;
+let rz, larg = window.innerWidth;
+window.addEventListener("resize", () => { if (window.innerWidth === larg) return; larg = window.innerWidth; clearTimeout(rz); rz = setTimeout(render, 150); });
 carregar();
 setInterval(carregar, 5 * 60 * 1000);
 setInterval(status, 60 * 1000);
