@@ -11,7 +11,7 @@ Parte da família **Argos Trade** (na mitologia grega, Argos é o gigante de cem
 | `backtest/` | Teste com dados históricos (Yahoo Finance e CDI do Banco Central) das duas carteiras simuladas |
 | `backtest/RESULTADO.md` | Resultado, gerado automaticamente pelo GitHub Actions |
 | `index.html` | **Monitor web** (tema claro, 5 abas: Resumo, Mercado, Histórico, Extrato e Regras): https://diogo385.github.io/argos-trade-b3/ |
-| `simulado/mercado.py` | Cotações do dia a cada 15 minutos durante o pregão, publicadas no ramo `mercado` (atraso de 15 a 30 minutos) |
+| `simulado/mercado.py` | Cotações do dia a cada 10 minutos durante o pregão, publicadas no ramo `mercado` (atraso de 15 a 30 minutos) |
 | `simulado/` | **Robô simulado** com R$ 6.000 de mentira, rodando todo dia útil às 19h15 e avisando no Telegram |
 | `ANALISE.md` | Análise e sugestão das 15 ações e 5 FIIs da carteira simulada |
 | `backtest/TRIAGEM.md` | Triagem com números de 58 ações e 29 FIIs (gerada pelo Actions) |

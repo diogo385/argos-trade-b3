@@ -1,7 +1,7 @@
 """Cotações do dia para a aba Mercado do monitor (atraso de cerca de 15 minutos, do Yahoo Finance).
 
 Uso: python mercado.py <arquivo_saida.json>
-Roda a cada 15 minutos durante o pregão pelo GitHub Actions, que publica o arquivo no ramo `mercado`.
+Roda a cada 10 minutos durante o pregão pelo GitHub Actions, que publica o arquivo no ramo `mercado`.
 Não mexe na carteira: o robô continua decidindo só no fechamento.
 """
 import json, sys

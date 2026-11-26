@@ -1,8 +1,10 @@
 name: Argos Trade B3 · mercado (cotações do dia)
 
+# O agendador do GitHub atrasa e às vezes pula execuções. Por isso cada execução fica rodando e atualiza as
+# cotações a cada 10 minutos até o fim do pregão; a cada hora uma nova execução assume o lugar da anterior.
 on:
   schedule:
-    - cron: "*/15 13-21 * * 1-5"   # a cada 15 min, das 10h às 18h45 de Brasília, dias úteis
+    - cron: "7 12-21 * * 1-5"   # tenta começar de hora em hora, das 9h07 às 18h07 de Brasília, em dias úteis
   workflow_dispatch:
 
 permissions:
@@ -15,22 +17,33 @@ concurrency:
 jobs:
   cotar:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Buscar cotações do dia
-        run: mkdir -p /tmp/mercado && python simulado/mercado.py /tmp/mercado/mercado.json
-      - name: Publicar no ramo mercado (um commit só, sem histórico)
+      - name: Atualizar as cotações a cada 10 minutos até as 18h50
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd /tmp/mercado
-          git init -q -b mercado
-          git config user.name "argos-trade-b3"
-          git config user.email "argos-trade-b3@users.noreply.github.com"
-          git add mercado.json
-          git commit -q -m "Cotações de $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"
-          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" mercado
+          publicar() {
+            rm -rf /tmp/mercado && mkdir -p /tmp/mercado
+            python simulado/mercado.py /tmp/mercado/mercado.json || return 0
+            cd /tmp/mercado
+            git init -q -b mercado
+            git config user.name "argos-trade-b3"
+            git config user.email "argos-trade-b3@users.noreply.github.com"
+            git add mercado.json
+            git commit -q -m "Cotações de $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"
+            git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" mercado || true
+            cd "$GITHUB_WORKSPACE"
+          }
+          inicio=$(date +%s)
+          while true; do
+            publicar
+            agora=$(TZ=America/Sao_Paulo date +%H%M)
+            # para depois das 18h50 de Brasília, antes das 9h50 ou depois de 5h30 rodando (outra execução assume)
+            if [ "$agora" -ge 1850 ] || [ "$agora" -lt 0950 ] || [ $(( $(date +%s) - inicio )) -ge 19800 ]; then break; fi
+            sleep 600
+          done

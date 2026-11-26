@@ -3,6 +3,7 @@ name: Argos Trade B3 · sinal de vida
 on:
   schedule:
     - cron: "15 0 * * 2-6"   # 21h15 de Brasília de segunda a sexta (00h15 UTC do dia seguinte): 2 horas depois do robô
+    - cron: "37 1 * * 2-6"   # segunda tentativa, 22h37 de Brasília
   workflow_dispatch:
 
 permissions:

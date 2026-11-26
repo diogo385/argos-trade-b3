@@ -2,7 +2,11 @@ name: Argos Trade B3 · robô simulado
 
 on:
   schedule:
-    - cron: "15 22 * * 1-5"   # 19h15 de Brasília, dias úteis: depois do fechamento e do atraso das cotações (feriado: não opera)
+    # 19h15 de Brasília, dias úteis. O agendador do GitHub atrasa e às vezes pula: por isso há três tentativas.
+    # O robô só roda uma vez por dia; as outras percebem que já rodou e não fazem nada.
+    - cron: "15 22 * * 1-5"
+    - cron: "47 22 * * 1-5"
+    - cron: "23 23 * * 1-5"
   workflow_dispatch:           # botão "Run workflow" para rodar na hora
     inputs:
       teste_telegram:
