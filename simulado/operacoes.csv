@@ -19,3 +19,7 @@ data;tipo;ativo;quantidade;preco;valor;custo;motivo
 2026-11-25;COMPRA;KNRI11;1;147.50;147.50;0.19;montagem inicial
 2026-11-25;COMPRA;VISC11;2;97.14;194.28;0.25;montagem inicial
 2026-11-25;COMPRA;MCCI11;2;90.24;180.48;0.23;montagem inicial
+2026-11-27;COMPRA;KNRI11;1;151.72;151.72;0.20;completa a posição com a sobra de caixa da montagem
+2026-11-27;COMPRA;MCCI11;1;90.60;90.60;0.12;completa a posição com a sobra de caixa da montagem
+2026-11-27;COMPRA;BTLG11;1;97.80;97.80;0.13;completa a posição com a sobra de caixa da montagem
+2026-11-27;COMPRA;EMBJ3;1;101.93;101.93;0.13;completa a posição com a sobra de caixa da montagem
