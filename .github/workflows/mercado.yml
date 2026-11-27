@@ -1,49 +1,51 @@
-name: Argos Trade B3 · mercado (cotações do dia)
+name: Argos Trade B3 · relógio (cotações do dia e disparo do robô)
 
-# O agendador do GitHub atrasa e às vezes pula execuções. Por isso cada execução fica rodando e atualiza as
-# cotações a cada 10 minutos até o fim do pregão; a cada hora uma nova execução assume o lugar da anterior.
+# O agendador do GitHub atrasa horas neste repositório. Este job fica rodando e faz uma passada a cada 10 minutos:
+# publica as cotações durante o pregão, dispara o robô às 19h15 e o sinal de vida às 21h15.
+# Perto do limite de 6 horas, ele dispara o próprio sucessor. O agendamento abaixo só serve para religar a
+# corrente se ela cair (por exemplo, depois de uma manutenção do GitHub).
 on:
   schedule:
-    - cron: "7 12-21 * * 1-5"   # tenta começar de hora em hora, das 9h07 às 18h07 de Brasília, em dias úteis
+    - cron: "11 */3 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: mercado
-  cancel-in-progress: true
+  cancel-in-progress: true   # uma execução nova assume o lugar da anterior
 
 jobs:
-  cotar:
+  relogio:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Atualizar as cotações a cada 10 minutos até as 18h50
+      - name: Uma passada a cada 10 minutos
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          publicar() {
-            rm -rf /tmp/mercado && mkdir -p /tmp/mercado
-            python simulado/mercado.py /tmp/mercado/mercado.json || return 0
-            cd /tmp/mercado
-            git init -q -b mercado
-            git config user.name "argos-trade-b3"
-            git config user.email "argos-trade-b3@users.noreply.github.com"
-            git add mercado.json
-            git commit -q -m "Cotações de $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')"
-            git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" mercado || true
-            cd "$GITHUB_WORKSPACE"
-          }
           inicio=$(date +%s)
           while true; do
-            publicar
-            agora=$(TZ=America/Sao_Paulo date +%H%M)
-            # para depois das 18h50 de Brasília, antes das 9h50 ou depois de 5h30 rodando (outra execução assume)
-            if [ "$agora" -ge 1850 ] || [ "$agora" -lt 0950 ] || [ $(( $(date +%s) - inicio )) -ge 19800 ]; then break; fi
+            git pull -q || true                      # pega correções do código sem reiniciar a corrente
+            rm -rf /tmp/mercado && mkdir -p /tmp/mercado
+            python simulado/relogio.py /tmp/mercado/mercado.json || echo "passada com erro; sigo na próxima"
+            if [ -f /tmp/mercado/mercado.json ]; then
+              ( cd /tmp/mercado && git init -q -b mercado \
+                && git config user.name "argos-trade-b3" && git config user.email "argos-trade-b3@users.noreply.github.com" \
+                && git add mercado.json && git commit -q -m "Cotações de $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M')" \
+                && git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" mercado ) || true
+            fi
+            if [ $(( $(date +%s) - inicio )) -ge 19200 ]; then   # 5h20: passa o bastão antes do limite de 6 horas
+              curl -s -X POST -H "Authorization: Bearer ${GITHUB_TOKEN}" -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/mercado.yml/dispatches" -d '{"ref":"main"}'
+              sleep 120   # o sucessor cancela esta execução ao começar
+              break
+            fi
             sleep 600
           done

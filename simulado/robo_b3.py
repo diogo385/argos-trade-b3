@@ -545,15 +545,18 @@ def main(agora=None):
         telegram(f"{ROTULO} · ✅ Teste do Telegram\nO bot do B3 está conectado. A carteira simulada começa no "
                  "fechamento de dia útil, às 19h15, e você recebe o resumo aqui todo dia útil.")
         return
-    hoje = agora.date().isoformat()
     ref = cotacao("BOVA11")
-    if ref["data"] != hoje and not os.environ.get("FORCAR"):
-        print(f"Sem pregão hoje ({hoje}); último pregão: {ref['data']}. Nada a fazer.")
+    # O dia processado é o do último pregão que o Yahoo mostra, não o do relógio: assim uma execução atrasada
+    # (depois da meia-noite) ainda registra o fechamento certo. Pregão em andamento não é fechamento.
+    hoje = ref["data"]
+    if hoje == agora.date().isoformat() and (agora.hour, agora.minute) < (18, 30) and not os.environ.get("FORCAR"):
+        print(f"Pregão de {hoje} ainda em andamento. Nada a fazer.")
         return
+    dia = date.fromisoformat(hoje)
     ops, alertas, prov, registro = [], [], [], []
     anterior = json.loads(ESTADO.read_text()) if ESTADO.exists() else {}
-    if anterior.get("ultimo_pregao") == hoje and not os.environ.get("FORCAR"):
-        print("Já rodou hoje.")
+    if anterior.get("ultimo_pregao", "") >= hoje and not os.environ.get("FORCAR"):
+        print(f"O pregão de {hoje} já foi processado. Nada a fazer.")
         return
     susp_dias = anterior.get("suspeito_dias", {})
     dados, px, info, coleta = coletar(hoje, ref, registro, alertas, anterior.get("precos", {}), susp_dias)
@@ -650,7 +653,7 @@ def main(agora=None):
     # mensagem do dia
     if novo:
         lista = lambda g: ", ".join(g)
-        texto = (f"{ROTULO} · Carteira nova iniciada em {agora:%d/%m/%Y}\n"
+        texto = (f"{ROTULO} · Carteira nova iniciada em {dia:%d/%m/%Y}\n"
                  f"Dinheiro de mentira: {brl(CAPITAL)} = {brl(CAPITAL - RESERVA)} em 20 ativos (R$ 250 cada) "
                  f"+ {brl(RESERVA)} de reserva no CDI.\n"
                  f"Valorização: {lista(VALORIZACAO)}\nDividendos: {lista(DIVIDENDOS)}\nFIIs: {lista(FIIS)}\n"
@@ -661,7 +664,7 @@ def main(agora=None):
                  "saio se os proventos despencarem por 2 meses e vendo metade da ação de valorização que ficar 60 pregões em queda forte. "
                  "Toda ordem passa pelo porteiro de risco.")
     else:
-        linhas = [f"{ROTULO} · 📊 Fechamento {agora:%d/%m}"]
+        linhas = [f"{ROTULO} · 📊 Fechamento {dia:%d/%m}"]
         for o in ops:
             emoji = "🟢" if o["tipo"] == "COMPRA" else "🔴"
             linhas.append(f"{emoji} {o['tipo']} {o['qtd']} {o['ativo']} a {brl(o['preco'])} = {brl(o['valor'])}\n   Motivo: {o['motivo']}")
@@ -682,13 +685,13 @@ def main(agora=None):
         texto = "\n".join(linhas)
     enviado = telegram(texto)
     # relatório semanal: no fechamento de sexta; se a sexta não teve pregão, sai no primeiro pregão seguinte
-    semana = "{}-S{:02d}".format(*agora.date().isocalendar()[:2])
+    semana = "{}-S{:02d}".format(*dia.isocalendar()[:2])
     if not novo:
         ref_dia = None
-        if agora.weekday() == 4 and est.get("relatorio_semana") != semana:
+        if dia.weekday() == 4 and est.get("relatorio_semana") != semana:
             ref_dia, marca = hoje, semana
         elif est.get("semana_atual") not in (None, semana) and est.get("relatorio_semana") != est["semana_atual"]:
-            ref_dia, marca = (agora.date() - timedelta(days=agora.weekday() + 3)).isoformat(), est["semana_atual"]
+            ref_dia, marca = (dia - timedelta(days=dia.weekday() + 3)).isoformat(), est["semana_atual"]
         if ref_dia:
             txt = relatorio_semanal(est, ref_dia)
             if txt:
