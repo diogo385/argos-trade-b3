@@ -183,3 +183,11 @@ Comandos pelo Telegram (`/status`, `/pausar`) ficam para a fase real: exigem um 
 **Limites conhecidos:** proventos entram pelo valor bruto (o JCP tem 17,5% de IR na fonte); a "realização em 2x o alvo" quase nunca dispara, porque o rebalanceamento trimestral age antes.
 
 **Carteira em vigor desde a montagem (25/11/2026):** nos FIIs, **VISC11** entrou no lugar do XPML11, que cortou o rendimento de R$ 0,92 para R$ 0,80 em novembro e estava com P/VP perto de 1 (`ANALISE.md`, seção 9). A troca foi feita antes da primeira compra, então não houve venda nem imposto.
+
+## 15. Relógio próprio (desde 27/11/2026)
+
+O agendador do GitHub atrasou de 6 a 8 horas neste repositório: o fechamento de **26/11/2026 não foi registrado** e as cotações do dia não eram coletadas. Desde então:
+
+- **Relógio** (`.github/workflows/mercado.yml` + `simulado/relogio.py`): um job fica rodando e faz uma passada a cada 10 minutos. Publica as cotações das 9h50 às 18h50, dispara o robô às 19h15 e o sinal de vida às 21h15, sempre em dias úteis. Perto do limite de 6 horas ele dispara o próprio sucessor. O agendamento do GitHub ficou só para religar a corrente se ela cair.
+- **Robô:** processa o último pregão que o Yahoo mostra, não o dia do relógio. Uma execução atrasada (depois da meia-noite) ainda registra o fechamento certo; com o pregão em andamento ele não faz nada.
+- **Sinal de vida:** olha o `estado.json`. Se o último dia útil fechado não estiver registrado, dispara o robô e avisa.
