@@ -360,6 +360,25 @@ def decidir(est, P, px, dados, hoje, ops, alertas):
                         "de 200 dias): vende metade", tese=True, minimo=0):
                 obs[a] = 0
 
+    # 1c. sobra de caixa da montagem: como só dá para comprar cotas inteiras, sobrou dinheiro além da reserva.
+    # Uma única vez, completa as posições que ficaram mais longe do alvo, sem deixar o caixa abaixo da reserva.
+    if not est.get("sobra_aplicada"):
+        v = valor(c, px)
+        alvo_m, piso = v * (1 - FRACAO_RESERVA) / len(ATIVOS), v * FRACAO_RESERVA
+        for cart, porteiro in ((c, P), (est["parada"], None)):   # a carteira parada recebe o mesmo ajuste
+            faltas = sorted(((alvo_m - cart["qtd"].get(a, 0) * px[a], a) for a in ATIVOS
+                             if a in cart["qtd"] and a not in est["fora"] and px[a]), reverse=True)
+            for falta, a in faltas:
+                n = round(falta / px[a])
+                gasto = n * px[a] * (1 + CUSTO)
+                if n < 1 or cart["caixa"] - gasto < piso:
+                    continue
+                if porteiro:
+                    porteiro.comprar(a, gasto + 0.01, ops, "completa a posição com a sobra de caixa da montagem", livre=True)
+                else:
+                    comprar(cart, a, gasto + 0.01, px[a], None, "")
+        est["sobra_aplicada"] = True
+
     # 2. reforço nas quedas, com a reserva
     for a in ATIVOS:
         if a in est["fora"] or a not in c["qtd"] or est["reforcos_mes"] >= REFORCOS_MES or obs.get(a, 0) > 0:
